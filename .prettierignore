@@ -1,0 +1,18 @@
+# Immutable Claude Design export — never reformat.
+design/
+
+# Project documentation is maintained by hand; do not reformat.
+docs/
+CLAUDE.md
+README.md
+
+# Generated / installed files
+node_modules/
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+next-env.d.ts

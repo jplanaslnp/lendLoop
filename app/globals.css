@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* The Claude Design export is a reference only; keep it out of class scanning. */
+@source not "../design";
+
+/*
+ * Base palette from docs/08_DESIGN_UI.md. The full design-token set is
+ * extracted from the design export in Phase 2.
+ */
+@theme {
+  --color-sage: #e8f0e2;
+  --color-surface: #fafbf8;
+  --color-forest: #2f4636;
+  --color-primary: #7040a0;
+  --color-lavender: #e9ddf5;
+  --color-sage-muted: #d5e3cf;
+
+  --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-sage);
+  color: var(--color-forest);
+}

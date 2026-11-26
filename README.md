@@ -21,7 +21,41 @@ See `docs/03_TECH_STACK.md` and `docs/04_ARCHITECTURE.md`.
 The `docs/` directory is the project specification and development guide. Start with `CLAUDE.md`, then read `docs/13_DEVELOPMENT_PLAN.md` to understand the implementation phases.
 
 ## Local setup
-The exact commands and environment variables must be completed during Phase 1. Do not commit `.env.local`, Clerk secret keys, Convex deployment secrets, HMAC secrets or n8n credentials.
+Do not commit `.env.local`, Clerk secret keys, Convex deployment secrets, HMAC secrets or n8n credentials.
+
+### Prerequisites
+- Node.js 24 LTS (pinned in `.nvmrc`; run `nvm use`). Node 25 is not supported by the test tooling.
+- pnpm 10.32.1 (pinned in `package.json` `packageManager`; `corepack enable` selects it automatically).
+
+### First run
+```bash
+nvm use
+pnpm install
+cp .env.example .env.local   # placeholders only; real keys are added in later phases
+pnpm dev                     # http://localhost:3000
+```
+
+For end-to-end tests, install the Playwright browser once:
+```bash
+pnpm exec playwright install chromium
+```
+
+### Scripts
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the Next.js development server |
+| `pnpm build` / `pnpm start` | Production build / serve the production build |
+| `pnpm typecheck` | Generate Next.js route types and run `tsc --noEmit` |
+| `pnpm lint` | ESLint (zero warnings allowed) |
+| `pnpm format` / `pnpm format:check` | Prettier write / verify |
+| `pnpm test` | Vitest unit and component tests (`tests/unit`) |
+| `pnpm test:e2e` | Playwright end-to-end tests (`tests/e2e`, desktop + mobile Chromium) |
+| `pnpm check` | typecheck + lint + format check + unit tests |
+
+CI (`.github/workflows/ci.yml`) runs the same checks plus the production build and Playwright tests.
+
+### Design reference
+`design/` holds the original Claude Design export and is an immutable visual reference. It is excluded from TypeScript, ESLint, Prettier and Tailwind scanning, and is never imported by the app. The original export is recoverable from the `design-baseline` Git tag.
 
 Expected local services:
 1. Next.js development server.

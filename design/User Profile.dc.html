@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#E8F0E2;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#2F4636;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:#7040A0;text-decoration:none}a:hover{color:#5A3086}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#E8F0E2;padding-bottom:{{ L.pageBottom }}">
+
+  <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid rgba(47,70,54,.07)">
+      <div style="max-width:1440px;margin:0 auto;padding:{{ L.hdrPad }};height:68px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px">
+        <a href="Explore.dc.html" style="display:flex;align-items:center;gap:10px;color:#5A2D8C">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:21px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C;white-space:nowrap">Share your tool</span>
+        </a>
+        <nav style="display:flex;align-items:stretch;gap:8px;height:68px">
+          <a href="Explore.dc.html" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Explore</a>
+          <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Borrowing<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+          <a href="Lending.dc.html" onClick="{{ guard.lending }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Lending<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+        </nav>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px">
+          <a href="Share a Tool.dc.html" onClick="{{ guard.share }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:999px;background:#7040A0;color:#FFFFFF;font-size:15px;font-weight:600;box-shadow:0 6px 16px rgba(112,64,160,.22)" style-hover="background:#5F3290;color:#FFFFFF">
+            <svg width="18" height="18" style="flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Share a tool</a>
+          <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><a href="My Profile.dc.html" onClick="{{ guard.profile }}" style="display:flex;align-items:center;gap:6px;color:#2F4636">
+            <img src="img/av-jaume.jpg" alt="Profile" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #FAFBF8;box-shadow:0 1px 4px rgba(47,70,54,.15)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </a></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openLogin }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c1-4 4-6 7.5-6s6.5 2 7.5 6"></path></svg>Login / Register</button></sc-if>
+        </div>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(47,70,54,.06)">
+      <div style="height:60px;padding:0 18px;display:flex;align-items:center;justify-content:space-between">
+        <a href="Explore.dc.html" style="display:flex;align-items:center;gap:8px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C">Share your tool</span>
+        </a>
+        <button style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#2F4636;cursor:pointer">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+          <span style="position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0;border:1.5px solid #F6F9F3"></span>
+        </button>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><main style="max-width:1120px;margin:0 auto;padding:{{ L.mainPad }};box-sizing:border-box;display:flex;flex-direction:column;gap:{{ L.secGap }}">
+    <div>
+      <button onClick="{{ goBack }}" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 16px 0 12px;border-radius:999px;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;color:#2F4636;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap" style-hover="background:#FFFFFF">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>Back</button>
+    </div>
+
+    <section data-screen-label="Public profile" style="display:flex;align-items:center;gap:{{ L.avGap }};background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:{{ L.cardPad }};box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.18)">
+      <span style="flex:none;width:{{ L.avSize }};height:{{ L.avSize }};border-radius:50%;background-image:url({{ u.avatar }});background-size:cover;background-position:center;border:4px solid #FFFFFF;box-shadow:0 4px 18px -6px rgba(47,70,54,.3)"></span>
+      <div style="min-width:0;display:flex;flex-direction:column;gap:{{ L.metaGap }}">
+        <h1 style="margin:0 0 4px;font-size:{{ L.nameSize }};line-height:1.1;font-weight:800;letter-spacing:-0.02em;color:#2F4636">{{ u.name }}</h1>
+        <span style="display:flex;align-items:center;gap:10px;font-size:{{ L.metaSize }};color:#2F4636">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="5" y="3.5" width="14" height="17" rx="1.5"></rect><path d="M9 7.5h2M13 7.5h2M9 11h2M13 11h2M9 14.5h2M13 14.5h2M10.5 20.5v-3h3v3"></path></svg><span>{{ u.place }}</span></span>
+        <span style="display:flex;align-items:center;gap:10px;font-size:{{ L.metaSize }};color:#2F4636">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg><span>Member since {{ u.since }}</span></span>
+      </div>
+    </section>
+
+    <section data-screen-label="Shared items" style="background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:{{ L.cardPad }};box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.18)">
+      <div style="margin-bottom:{{ L.headGap }}">
+        <h2 style="margin:0;font-size:{{ L.h2 }};line-height:1.15;font-weight:800;letter-spacing:-0.02em;color:#2F4636">{{ u.itemsTitle }}</h2>
+        <p style="margin:6px 0 0;font-size:{{ L.sub }};line-height:1.45;color:#4F6355">{{ u.itemsSub }}</p>
+      </div>
+      <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:{{ L.itemCols }};gap:22px">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="3">
+            <a href="Product Details.dc.html" style="min-width:0;display:flex;flex-direction:column;background:#FAFBF8;border-radius:18px;overflow:hidden;border:1px solid rgba(47,70,54,.08);box-shadow:0 1px 2px rgba(47,70,54,.04),0 10px 28px -12px rgba(47,70,54,.14);color:#2F4636;transition:transform .25s ease,box-shadow .25s ease" style-hover="transform:translateY(-3px);box-shadow:0 2px 4px rgba(47,70,54,.05),0 22px 40px -16px rgba(47,70,54,.24);color:#2F4636">
+              <div style="position:relative;aspect-ratio:4/3;background-color:#EFE7EC;background-image:url({{ it.img }});background-size:cover;background-position:center">
+                <span style="position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;background:{{ it.badgeBg }};color:{{ it.badgeFg }};font-size:13.5px;font-weight:600;box-shadow:0 2px 8px rgba(47,70,54,.12)"><span style="width:8px;height:8px;border-radius:50%;background:{{ it.dot }}"></span>{{ it.status }}</span>
+              </div>
+              <div style="padding:16px 20px">
+                <h3 style="margin:0;font-size:19px;line-height:1.25;font-weight:700;letter-spacing:-0.01em;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.name }}</h3>
+                <div style="margin-top:3px;font-size:14.5px;color:#556A5B">{{ it.cat }}</div>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="3">
+            <a href="Product Details.dc.html" style="display:grid;grid-template-columns:72px minmax(0,1fr) auto 18px;gap:12px;align-items:center;padding:10px 0;border-top:{{ it.rowBorder }};color:#2F4636">
+              <div style="width:72px;aspect-ratio:4/3;border-radius:10px;background-color:#EFE7EC;background-image:url({{ it.img }});background-size:cover;background-position:center"></div>
+              <div style="min-width:0">
+                <div style="font-size:15px;font-weight:700;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.name }}</div>
+                <div style="margin-top:2px;font-size:13px;color:#556A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.cat }}</div>
+              </div>
+              <span style="display:flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:{{ it.pillBg }};color:{{ it.badgeFg }};font-size:12px;font-weight:700;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:{{ it.dot }}"></span>{{ it.status }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </a>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+
+    <sc-if value="{{ hasActivity }}" hint-placeholder-val="{{ true }}">
+      <section data-screen-label="Sharing activity" style="background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:{{ L.cardPad }};box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.18)">
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:{{ L.headGap }}">
+          <div style="flex:none;width:{{ L.hIcon }};height:{{ L.hIcon }};border-radius:12px;background:#E9DDF5;display:flex;align-items:center;justify-content:center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7040A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5v-11M7.5 8 12 3.5 16.5 8"></path><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"></path></svg>
+          </div>
+          <div style="min-width:0">
+            <h2 style="margin:0;font-size:{{ L.h2 }};line-height:1.15;font-weight:800;letter-spacing:-0.02em;color:#2F4636">Sharing activity</h2>
+            <p style="margin:6px 0 0;font-size:{{ L.sub }};line-height:1.45;color:#4F6355">{{ u.activitySub }}</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;border:1px solid rgba(47,70,54,.08);border-radius:16px;overflow:hidden;background:#FFFFFF">
+          <sc-for list="{{ activity }}" as="r" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:{{ L.rowCols }};gap:{{ L.rowGap }};align-items:center;padding:{{ L.rowPad }};border-top:{{ r.border }}">
+              <div style="width:100%;aspect-ratio:4/3;border-radius:10px;background-color:#EFE7EC;background-image:url({{ r.img }});background-size:cover;background-position:center"></div>
+              <div style="min-width:0">
+                <div style="font-size:{{ L.rowName }};font-weight:700;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
+                <div style="margin-top:2px;font-size:{{ L.rowMeta }};color:#556A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lent to a neighbor · {{ r.when }}</div>
+              </div>
+              <span style="display:flex;align-items:center;gap:6px;height:{{ L.badgeH }};padding:0 12px;border-radius:999px;background:{{ r.b.bg }};color:{{ r.b.fg }};font-size:{{ L.badgeFs }};font-weight:700;white-space:nowrap"><span style="flex:none;width:{{ L.badgeIc }};height:{{ L.badgeIc }};background-image:url({{ r.b.icon }});background-size:contain;background-repeat:no-repeat"></span>{{ r.b.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+  </main></sc-if>
+  <div style="max-width:1440px;margin:0 auto;padding:0 {{ footX }} 24px;box-sizing:border-box"><dc-import name="Site Footer" hint-size="100%,300px"></dc-import></div>
+
+  <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+    <nav style="position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(250,251,248,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(47,70,54,.08);padding:6px 8px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)">
+      <a href="Explore.dc.html" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5V20h-17z"></path><path d="M10 20v-5h4v5"></path></svg>Explore</a>
+      <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11M7.5 10 12 14.5 16.5 10"></path><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"></path></svg>Borrowing<span style="position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+      <a href="Lending.dc.html" onClick="{{ guard.lending }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5v-11M7.5 8 12 3.5 16.5 8"></path><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"></path></svg>Lending<span style="position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+      <a href="Share a Tool.dc.html" onClick="{{ guard.share }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"></rect><path d="M12 8v8M8 12h8"></path></svg>Share</a>
+      <a href="My Profile.dc.html" onClick="{{ guard.profile }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c1-4 4-6 7.5-6s6.5 2 7.5 6"></path></svg>Profile</a>
+    </nav>
+  </sc-if>
+  <dc-import name="Auth Modal" open="{{ authOpen }}" mode="{{ authMode }}" on-close="{{ authClose }}" on-success="{{ authSuccess }}" hint-size="0px,0px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;user&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ruben&quot;,&quot;marc&quot;,&quot;laura&quot;,&quot;david&quot;,&quot;emma&quot;,&quot;bruno&quot;,&quot;sara&quot;,&quot;trevis&quot;],&quot;default&quot;:&quot;ruben&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const ICONS = {
+  ret:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  swap:'<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>',
+};
+const ic = (k, c) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`);
+const BADGE = { returned:['Returned','#E9DDF5','#7040A0','ret'], borrowed:['On loan','#E9DDF5','#5A2D8C','swap'] };
+const badge = s => { const [label,bg,fg,k] = BADGE[s]; return { label, bg, fg, icon: ic(k, fg) }; };
+const USERS = {
+  marc:  { name:'Marc Soler',   bldg:'Building A', since:'Mar 2025', items:[['Projector','Electronics','projector',true]], act:[['Projector','projector','Oct 2026','returned'],['Projector','projector','Aug 2026','returned']] },
+  laura: { name:'Laura Pérez',  bldg:'Building B', since:'Jun 2025', items:[['Camping Chair','Camping & Travel','chair',false],['City Bicycle','Sports & Fitness','bike',true]], act:[['Camping Chair','chair','Nov 2026','borrowed'],['City Bicycle','bike','Sep 2026','returned']] },
+  david: { name:'David Ruiz',   bldg:'Building A', since:'Jan 2026', items:[['Power Drill','DIY & Tools','drill',true]], act:[['Power Drill','drill','Nov 2026','returned']] },
+  emma:  { name:'Emma Laurent', bldg:'Building C', since:'Apr 2025', items:[['Cooler Box','Camping & Travel','cooler',true]], act:[['Cooler Box','cooler','Jul 2026','returned']] },
+  ruben: { name:'Ruben Garcia', bldg:'Building B', since:'Aug 2025', items:[['DJI Osmo Mobile','Electronics','gimbal',true],['Camera Tripod','Electronics','tripod',false]], act:[['Camera Tripod','tripod','Nov 2026','borrowed'],['DJI Osmo Mobile','gimbal','Oct 2026','returned'],['Camera Tripod','tripod','Sep 2026','returned']] },
+  bruno: { name:'Bruno Martin', bldg:'Building A', since:'Feb 2026', items:[['Angle Grinder','DIY & Tools','grinder',false]], act:[['Angle Grinder','grinder','Nov 2026','borrowed']] },
+  sara:  { name:'Sara Torres',  bldg:'Building C', since:'Sep 2025', items:[['Drone','Electronics','drone',false],['Board Game Bundle','Books & Games','games',true]], act:[['Drone','drone','Nov 2026','borrowed'],['Board Game Bundle','games','Oct 2026','returned']] },
+  trevis:{ name:'Trevis King',  bldg:'Building A', since:'May 2026', items:[['Softbox Kit','Electronics','softbox',true]], act:[['Softbox Kit','softbox','Nov 2026','returned']] },
+};
+
+const AUTH_GATE = true;
+class Component extends DCLogic {
+  _authed() { try { return localStorage.getItem('syt-auth') === 'in'; } catch (_) { return false; } }
+  openAuth(intent, mode) { this.setState({ authOpen:true, authMode: mode || 'signin', authIntent: intent || null }); }
+  renderVals() {
+    const authed = this._authed();
+    if (AUTH_GATE && !authed && !this._gated) { this._gated = true; setTimeout(() => this.openAuth(null, 'signin'), 0); }
+    const base = this._rv();
+    const guard = href => e => { if (this._authed()) return; e.preventDefault(); this.openAuth({ href }); };
+    const w = document.documentElement.clientWidth || window.innerWidth || 1440;
+    return { ...base, authed, guest: !authed, authOpen: !!this.state.authOpen, authMode: this.state.authMode || 'signin',
+      footX: w < 760 ? '14px' : w < 1100 ? '32px' : '56px',
+      guard: { borrowing: guard('Borrowing.dc.html'), lending: guard('Lending.dc.html'), share: guard('Share a Tool.dc.html'), profile: guard('My Profile.dc.html') },
+      openLogin: () => this.openAuth(null, 'signin'),
+      authClose: () => { this.setState({ authOpen:false, authIntent:null }); if (AUTH_GATE && !this._authed()) location.href = 'Explore.dc.html'; },
+      authSuccess: () => { try { localStorage.setItem('syt-auth', 'in'); } catch (_) {} const it = this.state.authIntent; this.setState({ authOpen:false, authIntent:null, authTick: Date.now() }); if (it && it.href) location.href = it.href; else if (it && it.run) setTimeout(it.run, 60); },
+    };
+  }
+
+  state = { w: (typeof window !== 'undefined' && window.innerWidth) || 1440 };
+  ensureWatch() {
+    if (this._ro) return;
+    const read = () => { const w = document.documentElement.clientWidth || window.innerWidth; this.setState({ w }); };
+    this._ro = new ResizeObserver(read); this._ro.observe(document.documentElement);
+    window.addEventListener('resize', read); this._read = read; requestAnimationFrame(read);
+  }
+  componentDidMount() { this.ensureWatch(); }
+  componentWillUnmount() { this._ro && this._ro.disconnect(); window.removeEventListener('resize', this._read); this._ro = null; }
+  goBack() {
+    try { const r = document.referrer; if (r && new URL(r).origin === location.origin && history.length > 1) return history.back(); } catch (_) {}
+    location.href = 'Explore.dc.html';
+  }
+  _rv() {
+    this.ensureWatch();
+    const w = document.documentElement.clientWidth || window.innerWidth || this.state.w || 1440;
+    const mobile = w < 760;
+    let id = this.props.user || 'ruben';
+    try { const q = new URLSearchParams(location.search).get('u'); if (q && USERS[q]) id = q; } catch (_) {}
+    if (!USERS[id]) id = 'ruben';
+    const U = USERS[id]; const first = U.name.split(' ')[0];
+    const L = {
+      desktop: !mobile, mobile,
+      pageBottom: mobile ? 'calc(96px + env(safe-area-inset-bottom))' : '72px',
+      navPad: w < 1100 ? '3px 12px 0' : '3px 20px 0', hdrPad: w < 1100 ? '0 32px' : '0 56px',
+      mainPad: mobile ? '18px 14px 0' : (w < 1100 ? '32px 32px 0' : '32px 56px 0'),
+      secGap: mobile ? '16px' : '24px',
+      cardPad: mobile ? '18px 16px' : '28px 32px',
+      avSize: mobile ? '72px' : '88px', avGap: mobile ? '16px' : '28px', nameSize: mobile ? '22px' : '32px', metaSize: mobile ? '14px' : '16px', metaGap: mobile ? '6px' : '8px',
+      h2: mobile ? '21px' : '28px', sub: mobile ? '14px' : '16px', headGap: mobile ? '14px' : '24px', hIcon: mobile ? '40px' : '48px',
+      itemCols: w >= 980 ? 'repeat(3,minmax(0,1fr))' : 'repeat(2,minmax(0,1fr))',
+      rowCols: mobile ? '64px minmax(0,1fr) auto' : '96px minmax(0,1fr) auto',
+      rowGap: mobile ? '12px' : '20px', rowPad: mobile ? '10px 12px' : '12px 20px 12px 12px',
+      rowName: mobile ? '15px' : '17px', rowMeta: mobile ? '13px' : '15px',
+      badgeH: mobile ? '26px' : '32px', badgeFs: mobile ? '12px' : '14px', badgeIc: mobile ? '13px' : '16px',
+    };
+    const items = U.items.map(([name, cat, img, ok], i) => ({ name, cat, img:`img/${img}.jpg`, status: ok ? 'Available' : 'Borrowed',
+      badgeBg: ok ? 'rgba(250,251,248,.94)' : 'rgba(255,246,214,.96)', pillBg: ok ? '#E1F0DA' : '#FFF4CC',
+      badgeFg: ok ? '#1F5A2C' : '#7A5800', dot: ok ? '#2EA44F' : '#EDB800', rowBorder: i ? '1px solid rgba(47,70,54,.08)' : 'none' }));
+    const activity = U.act.map(([name, img, when, st], i) => ({ name, img:`img/${img}.jpg`, when, b: badge(st), border: i ? '1px solid rgba(47,70,54,.08)' : 'none' }));
+    return {
+      L, items, activity, hasActivity: activity.length > 0,
+      u: { name:U.name, avatar:`img/av-${id}.jpg`, place:`${U.bldg} · Gent`, since:U.since,
+        itemsTitle:`Items shared by ${first}`, itemsSub:`Objects ${first} is sharing with neighbors.`,
+        activitySub:`Recent loans of ${first}'s items. Borrower details stay private.` },
+      goBack: () => this.goBack(),
+    };
+  }
+}
+</script>
+</body>
+</html>

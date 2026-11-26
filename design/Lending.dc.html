@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#E8F0E2;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#2F4636;-webkit-font-smoothing:antialiased;}
+a{color:#7040A0;text-decoration:none}a:hover{color:#5A3086}
+button{font-family:inherit}
+.noscroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#E8F0E2;padding-bottom:{{ L.pageBottom }}">
+
+  <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid rgba(47,70,54,.07)">
+      <div style="max-width:1440px;margin:0 auto;padding:{{ L.hdrPad }};height:68px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px">
+        <a href="Explore.dc.html" style="display:flex;align-items:center;gap:10px;color:#5A2D8C">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.940 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:21px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C;white-space:nowrap">Share your tool</span>
+        </a>
+        <nav style="display:flex;align-items:stretch;gap:8px;height:68px">
+          <a href="Explore.dc.html" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Explore</a>
+          <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Borrowing<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+          <a href="Lending.dc.html" onClick="{{ guard.lending }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:700;color:#7040A0;border-bottom:3px solid #7040A0;white-space:nowrap">Lending<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+        </nav>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px">
+          <a href="Share a Tool.dc.html" onClick="{{ guard.share }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:999px;background:#7040A0;color:#FFFFFF;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 6px 16px rgba(112,64,160,.22)" style-hover="background:#5F3290;color:#FFFFFF">
+            <svg width="18" height="18" style="flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            Share a tool</a>
+          <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><a href="My Profile.dc.html" onClick="{{ guard.profile }}" style="display:flex;align-items:center;gap:6px;color:#2F4636">
+            <img src="img/av-jaume.jpg" alt="Profile" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #FAFBF8;box-shadow:0 1px 4px rgba(47,70,54,.15)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </a></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openLogin }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c1-4 4-6 7.5-6s6.5 2 7.5 6"></path></svg>Login / Register</button></sc-if>
+        </div>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ L.mobileList }}" hint-placeholder-val="{{ false }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(47,70,54,.06)">
+      <div style="height:60px;padding:0 18px;display:flex;align-items:center;justify-content:space-between">
+        <a href="Explore.dc.html" style="display:flex;align-items:center;gap:8px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.770-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:18px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C">Share your tool</span>
+        </a>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#2F4636;cursor:pointer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+            <span style="position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0;border:1.5px solid #F6F9F3"></span>
+          </button>
+          <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><img src="img/av-jaume.jpg" alt="Profile" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #FAFBF8;box-shadow:0 1px 4px rgba(47,70,54,.15)"></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openLogin }}" style="height:40px;padding:0 16px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Log in</button></sc-if>
+        </div>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ L.mobileDetail }}" hint-placeholder-val="{{ false }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(47,70,54,.06)">
+      <div style="height:60px;padding:0 12px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center">
+        <button onClick="{{ back }}" aria-label="Back" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#2F4636;box-shadow:0 1px 3px rgba(47,70,54,.08)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <span style="text-align:center;font-size:18px;font-weight:800;color:#2F4636;letter-spacing:-0.01em">Lending</span>
+        <button aria-label="More" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#2F4636;box-shadow:0 1px 3px rgba(47,70,54,.08)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+        </button>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><main style="max-width:1440px;margin:0 auto;padding:{{ L.mainPad }}">
+    <sc-if value="{{ L.showHead }}" hint-placeholder-val="{{ true }}">
+      <h1 style="margin:0;font-size:{{ L.h1 }};line-height:1.05;font-weight:800;letter-spacing:-0.03em;color:#2F4636">Lending</h1>
+      <p style="margin:10px 0 0;font-size:{{ L.lead }};line-height:1.45;color:#4F6355;text-wrap:pretty">Items you own and share with your neighbours.</p>
+
+      <div class="noscroll" style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:{{ L.chipMargin }};padding:{{ L.chipPad }}">
+        <button onClick="{{ pick.all }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.all.bd }};background:{{ c.all.bg }};color:{{ c.all.fg }};font-size:14px;font-weight:{{ c.all.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.all.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg>All</button>
+        <button onClick="{{ pick.pending }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.pending.bd }};background:{{ c.pending.bg }};color:{{ c.pending.fg }};font-size:14px;font-weight:{{ c.pending.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.pending.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>Pending</button>
+        <button onClick="{{ pick.approved }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.approved.bd }};background:{{ c.approved.bg }};color:{{ c.approved.fg }};font-size:14px;font-weight:{{ c.approved.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.approved.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Approved</button>
+        <button onClick="{{ pick.active }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.active.bd }};background:{{ c.active.bg }};color:{{ c.active.fg }};font-size:14px;font-weight:{{ c.active.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.active.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg>On Loan</button>
+        <button onClick="{{ pick.declined }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.declined.bd }};background:{{ c.declined.bg }};color:{{ c.declined.fg }};font-size:14px;font-weight:{{ c.declined.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.declined.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"></path></svg>Declined</button>
+        <button onClick="{{ pick.returned }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.returned.bd }};background:{{ c.returned.bg }};color:{{ c.returned.fg }};font-size:14px;font-weight:{{ c.returned.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.returned.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>Returned</button>
+        <button onClick="{{ pick.cancelled }}" style="flex:none;display:flex;align-items:center;gap:8px;height:{{ L.chipH }};padding:0 18px;border-radius:999px;border:1px solid {{ c.cancelled.bd }};background:{{ c.cancelled.bg }};color:{{ c.cancelled.fg }};font-size:14px;font-weight:{{ c.cancelled.fw }};cursor:pointer;white-space:nowrap;box-shadow:{{ c.cancelled.sh }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M6 6l12 12"></path></svg>Cancelled</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ L.showBackLink }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ back }}" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0 0 18px;padding:0 16px 0 10px;height:40px;border-radius:999px;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;color:#2F4636;font-size:14px;font-weight:600;cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>All requests</button>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:{{ L.cols }};gap:28px;align-items:start">
+      <sc-if value="{{ L.showList }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:{{ L.listGap }};min-width:0">
+          <sc-for list="{{ list }}" as="r" hint-placeholder-count="4">
+            <sc-if value="{{ L.wideCard }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ r.select }}" style="all:unset;box-sizing:border-box;display:grid;grid-template-columns:150px minmax(0,1fr) 24px;gap:22px;align-items:center;padding:12px 20px 12px 12px;background:{{ r.bg }};border:1.5px solid {{ r.bd }};border-radius:18px;box-shadow:0 1px 2px rgba(47,70,54,.04),0 10px 28px -14px rgba(47,70,54,.16);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease" style-hover="transform:translateY(-2px);box-shadow:0 2px 4px rgba(47,70,54,.05),0 18px 34px -16px rgba(47,70,54,.24)">
+                <div style="aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#EFE7EC"><div style="width:100%;height:100%;background-image:url({{ r.img }});background-size:cover;background-position:center"></div></div>
+                <div style="display:flex;flex-direction:column;gap:9px;min-width:0">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <span style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                    <span style="flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:999px;background:{{ r.b.bg }};color:{{ r.b.fg }};font-size:14px;font-weight:600;white-space:nowrap"><span style="flex:none;width:16px;height:16px;background-image:url({{ r.b.icon }});background-size:contain"></span>{{ r.b.label }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;font-size:15px;color:#2F4636">
+                    <span style="flex:none;width:28px;height:28px;border-radius:50%;background-image:url({{ r.avatar }});background-size:cover;background-position:center"></span>
+                    <span style="font-weight:500">{{ r.person }}</span>
+                    <span style="display:flex;align-items:center;gap:6px;color:#4F6355"><span style="width:4px;height:4px;border-radius:50%;background:#4F6355"></span>{{ r.bldg }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <span style="display:flex;align-items:center;gap:10px;font-size:15px;color:#3E5444">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>{{ r.range }}</span>
+                    <sc-if value="{{ r.needs }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#7040A0"><span style="width:7px;height:7px;border-radius:50%;background:#7040A0"></span>{{ r.needs }}</span></sc-if>
+                  </div>
+                </div>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </button>
+            </sc-if>
+            <sc-if value="{{ L.compactCard }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ r.select }}" style="all:unset;box-sizing:border-box;display:grid;grid-template-columns:96px minmax(0,1fr) 18px;gap:14px;align-items:center;padding:10px 12px 10px 10px;background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:18px;box-shadow:0 1px 2px rgba(47,70,54,.04),0 8px 22px -12px rgba(47,70,54,.16);cursor:pointer">
+                <div style="width:96px;height:96px;border-radius:12px;overflow:hidden;background:#EFE7EC"><div style="width:100%;height:100%;background-image:url({{ r.img }});background-size:cover;background-position:center"></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <div style="display:flex"><span style="display:flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:{{ r.b.bg }};color:{{ r.b.fg }};font-size:12.5px;font-weight:700;white-space:nowrap"><span style="flex:none;width:14px;height:14px;background-image:url({{ r.b.icon }});background-size:contain"></span>{{ r.b.label }}</span></div>
+                  <span style="font-size:16.5px;font-weight:700;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:#2F4636;min-width:0">
+                    <span style="flex:none;width:22px;height:22px;border-radius:50%;background-image:url({{ r.avatar }});background-size:cover;background-position:center"></span>
+                    <span style="font-weight:600;white-space:nowrap">{{ r.person }}</span><span style="color:#4F6355;white-space:nowrap">· {{ r.bldg }}</span>
+                  </div>
+                  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:#3E5444"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>{{ r.rangeShort }}</span>
+                  <sc-if value="{{ r.needs }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#7040A0"><span style="width:6px;height:6px;border-radius:50%;background:#7040A0"></span>{{ r.needs }}</span></sc-if>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </button>
+            </sc-if>
+          </sc-for>
+          <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:56px 24px;text-align:center;background:#FAFBF8;border-radius:18px;border:1px dashed rgba(47,70,54,.18)">
+              <p style="margin:0;font-size:17px;font-weight:700;color:#2F4636">No requests here</p>
+              <p style="margin:8px 0 0;font-size:14.5px;color:#556A5B">Requests with this status will show up in this list.</p>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ L.showDetail }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ d }}" hint-placeholder-val="{{ false }}">
+          <section style="position:{{ L.detailPos }};top:92px;min-width:0;background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:{{ L.detailPad }};box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.2)">
+            <div style="position:relative;aspect-ratio:{{ L.heroRatio }};border-radius:16px;overflow:hidden;background:#EFE7EC">
+              <span style="display:block;flex:none;display:block;width:100%;height:100%;;background-image:url({{ d.img }});background-size:cover;background-position:center"></span>
+              <sc-if value="{{ L.split }}" hint-placeholder-val="{{ true }}">
+                <button aria-label="More" style="position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:50%;border:none;background:rgba(250,251,248,.94);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#2F4636;box-shadow:0 2px 8px rgba(47,70,54,.15)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+                </button>
+              </sc-if>
+            </div>
+
+            <div style="padding:{{ L.detailInner }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap">
+                <h2 style="margin:0;font-size:{{ L.h2 }};line-height:1.1;font-weight:800;letter-spacing:-0.02em;color:#2F4636">{{ d.name }}</h2>
+                <span style="display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;background:{{ d.b.bg }};color:{{ d.b.fg }};font-size:14.5px;font-weight:700;white-space:nowrap"><span style="display:block;flex:none;width:17px;height:17px;background-image:url({{ d.b.icon }});background-size:cover;background-position:center"></span>{{ d.b.label }}</span>
+              </div>
+
+              <div style="padding:16px 0;border-bottom:1px solid rgba(47,70,54,.1)">
+                <a href="{{ d.profileHref }}" style="display:flex;align-items:center;gap:14px;color:#2F4636" style-hover="color:#2F4636">
+                  <span style="display:block;flex:none;width:52px;height:52px;border-radius:50%;background-image:url({{ d.avatar }});background-size:cover;background-position:center;box-shadow:0 2px 8px -3px rgba(47,70,54,.3)"></span>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:16px;font-weight:700;color:#2F4636">{{ d.fullName }}</span><span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7040A0;background:#E9DDF5;padding:3px 8px;border-radius:999px">{{ d.roleLabel }}</span></div>
+                    <div style="margin-top:3px;font-size:14px;color:#556A5B">{{ d.place }}</div>
+                    <div style="margin-top:4px;font-size:13.5px;font-weight:700;color:#7040A0">View Profile</div>
+                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+                </a>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid rgba(47,70,54,.1)">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="1.5" stroke-linecap="round" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:14px;color:#556A5B">{{ d.periodLabel }}</div>
+                  <div style="margin-top:2px;font-size:17px;font-weight:700;color:#2F4636">{{ d.range }}</div>
+                </div>
+                <span style="flex:none;padding:7px 14px;border-radius:999px;background:#E9DDF5;color:#5A2D8C;font-size:14px;font-weight:700">{{ d.days }}</span>
+              </div>
+
+              <sc-if value="{{ d.banner }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:flex-start;gap:12px;margin-top:16px;padding:14px 16px;border-radius:14px;background:{{ d.banner.bg }};color:{{ d.banner.fg }};border:1px solid {{ d.banner.bd }}">
+                  <span style="display:block;flex:none;width:20px;height:20px;flex:none;margin-top:1px;background-image:url({{ d.banner.icon }});background-size:cover;background-position:center"></span>
+                  <div style="min-width:0">
+                    <div style="font-size:14.5px;font-weight:700">{{ d.banner.title }}</div>
+                    <div style="margin-top:2px;font-size:14px;line-height:1.45;text-wrap:pretty">{{ d.banner.text }}</div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div style="padding:20px 0 4px">
+                <sc-for list="{{ d.steps }}" as="s" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:16px">
+                    <div style="display:flex;flex-direction:column;align-items:center">
+                      <div style="width:26px;height:26px;box-sizing:border-box;border-radius:50%;background:{{ s.dotBg }};border:2px solid {{ s.dotBd }};display:flex;align-items:center;justify-content:center;flex:none">
+                        <sc-if value="{{ s.icon }}" hint-placeholder-val="{{ false }}"><span style="display:block;flex:none;width:14px;height:14px;background-image:url({{ s.icon }});background-size:cover;background-position:center"></span></sc-if>
+                      </div>
+                      <sc-if value="{{ s.line }}" hint-placeholder-val="{{ true }}"><div style="width:2px;flex:1;min-height:14px;margin:3px 0;border-radius:2px;background:{{ s.lineColor }}"></div></sc-if>
+                    </div>
+                    <div style="padding:2px 0 18px;min-width:0">
+                      <div style="font-size:15.5px;font-weight:700;color:{{ s.titleColor }}">{{ s.title }}</div>
+                      <div style="margin-top:2px;font-size:14px;color:#556A5B;text-wrap:pretty">{{ s.sub }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <sc-if value="{{ d.hasActions }}" hint-placeholder-val="{{ true }}">
+              <div style="position:{{ L.actPos }};bottom:0;display:flex;flex-wrap:wrap;gap:12px;padding:{{ L.actPad }};margin:{{ L.actMargin }};border-top:1px solid rgba(47,70,54,.1);background:#FAFBF8;border-radius:{{ L.actRadius }}">
+                <sc-for list="{{ d.actions }}" as="a" hint-placeholder-count="2">
+                  <sc-if value="{{ a.primary }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ a.onClick }}" style="flex:1 1 220px;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 22px;border:none;border-radius:999px;background:#7040A0;color:#FFFFFF;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -6px rgba(112,64,160,.45)" style-hover="background:#5F3290"><span style="display:block;flex:none;width:20px;height:20px;background-image:url({{ a.icon }});background-size:cover;background-position:center"></span>{{ a.label }}</button>
+                  </sc-if>
+                  <sc-if value="{{ a.secondary }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ a.onClick }}" style="flex:1 1 220px;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 22px;border:1.5px solid #7040A0;border-radius:999px;background:#FAFBF8;color:#7040A0;font-size:16px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA"><span style="display:block;flex:none;width:20px;height:20px;background-image:url({{ a.icon }});background-size:cover;background-position:center"></span>{{ a.label }}</button>
+                  </sc-if>
+                  <sc-if value="{{ a.info }}" hint-placeholder-val="{{ false }}">
+                    <div style="flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 22px;border-radius:999px;background:{{ a.bg }};color:{{ a.fg }};font-size:15.5px;font-weight:700;box-sizing:border-box"><span style="display:block;flex:none;width:20px;height:20px;background-image:url({{ a.icon }});background-size:cover;background-position:center"></span>{{ a.label }}</div>
+                  </sc-if>
+                  <sc-if value="{{ a.ghost }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ a.onClick }}" style="flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:none;border-radius:999px;background:transparent;color:#B3261E;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#FCEDEB"><span style="display:block;flex:none;width:18px;height:18px;background-image:url({{ a.icon }});background-size:cover;background-position:center"></span>{{ a.label }}</button>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </sc-if>
+    </div>
+  </main></sc-if>
+
+  <sc-if value="{{ L.mobileList }}" hint-placeholder-val="{{ false }}">
+    <nav style="position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(250,251,248,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(47,70,54,.08);padding:6px 8px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)">
+      <a href="Explore.dc.html" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5V20h-17z"></path><path d="M10 20v-5h4v5"></path></svg>Explore</a>
+      <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11M7.5 10 12 14.5 16.5 10"></path><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"></path></svg>Borrowing<span style="position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+      <a href="Lending.dc.html" onClick="{{ guard.lending }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#7040A0;font-size:12px;font-weight:700">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5v-11M7.5 8 12 3.5 16.5 8"></path><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"></path></svg>Lending<span style="position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+      <a href="Share a Tool.dc.html" onClick="{{ guard.share }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"></rect><path d="M12 8v8M8 12h8"></path></svg>Share</a>
+      <a href="My Profile.dc.html" onClick="{{ guard.profile }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:44px;color:#2F4636;font-size:12px;font-weight:500">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c1-4 4-6 7.5-6s6.5 2 7.5 6"></path></svg>Profile</a>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;z-index:50;background:rgba(31,46,36,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:{{ L.modalAlign }};justify-content:center;padding:{{ L.modalPad }}">
+      <div onClick="{{ stop }}" role="dialog" aria-modal="true" style="width:100%;max-width:440px;box-sizing:border-box;background:#FAFBF8;border-radius:24px;padding:28px;box-shadow:0 30px 80px -20px rgba(31,46,36,.45)">
+        <div style="width:52px;height:52px;border-radius:50%;background:{{ modal.iconBg }};display:flex;align-items:center;justify-content:center"><span style="display:block;flex:none;width:26px;height:26px;background-image:url({{ modal.icon }});background-size:cover;background-position:center"></span></div>
+        <h3 style="margin:18px 0 0;font-size:22px;font-weight:800;letter-spacing:-0.01em;color:#2F4636">{{ modal.title }}</h3>
+        <p style="margin:10px 0 0;font-size:15px;line-height:1.5;color:#4F6355;text-wrap:pretty">{{ modal.body }}</p>
+        <sc-if value="{{ modal.address }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;padding:16px;border-radius:14px;background:#EEF3EA;border:1px solid rgba(47,70,54,.08)">
+            <div style="font-size:16px;font-weight:700;color:#2F4636">{{ modal.address }}</div>
+            <div style="margin-top:4px;font-size:14px;color:#4F6355">{{ modal.addressNote }}</div>
+          </div>
+        </sc-if>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px">
+          <button onClick="{{ closeModal }}" style="flex:1 1 140px;min-height:50px;border-radius:999px;border:1.5px solid rgba(47,70,54,.2);background:#FAFBF8;color:#2F4636;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F0F4EC">{{ modal.keepLabel }}</button>
+          <sc-if value="{{ modal.confirm }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ modal.confirm }}" style="flex:1 1 160px;min-height:50px;border-radius:999px;border:none;background:#B3261E;color:#FFFFFF;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#97201A">{{ modal.confirmLabel }}</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:{{ L.toastBottom }};transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);box-sizing:border-box;padding:14px 20px;border-radius:16px;background:#2F4636;color:#FAFBF8;font-size:14.5px;font-weight:600;box-shadow:0 16px 40px -12px rgba(31,46,36,.5)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B9E3A8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>{{ toast }}
+    </div>
+  </sc-if>
+  <dc-import name="Auth Modal" open="{{ authOpen }}" mode="{{ authMode }}" on-close="{{ authClose }}" on-success="{{ authSuccess }}" hint-size="0px,0px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ROLE = 'received';
+const ITEM = { projector:'Projector', chair:'Camping Chair', drill:'Power Drill', cooler:'Cooler Box', tripod:'Camera Tripod', grinder:'Angle Grinder', drone:'Drone', softbox:'Softbox Kit' };
+const PEOPLE = { marc:['Marc S.','Building A','Mar 2025'], laura:['Laura P.','Building B','Jun 2025'], david:['David R.','Building A','Jan 2026'], emma:['Emma L.','Building C','Apr 2025'], ruben:['Ruben G.','Building B','Aug 2025'], bruno:['Bruno M.','Building A','Feb 2026'], sara:['Sara T.','Building C','Sep 2025'], trevis:['Trevis K.','Building A','May 2026'] };
+const FULL = { marc:'Marc Soler', laura:'Laura Pérez', david:'David Ruiz', emma:'Emma Laurent', ruben:'Ruben Garcia', bruno:'Bruno Martin', sara:'Sara Torres', trevis:'Trevis King' };
+const ME_ADDR = 'Building A · 3rd floor, Door 3B';
+const SEED = [
+  { id:'s1', role:'sent', item:'projector', p:'marc', status:'approved', start:'2026-11-28', end:'2026-11-30', log:{ sent:'Nov 24 · 10:24', approved:'Nov 24 · 14:37' } },
+  { id:'s2', role:'sent', item:'cooler', p:'emma', status:'ready', start:'2026-11-26', end:'2026-11-29', log:{ sent:'Nov 22 · 09:12', approved:'Nov 22 · 18:05', ready:'Today · 09:40' } },
+  { id:'s3', role:'sent', item:'chair', p:'laura', status:'pending', start:'2026-12-05', end:'2026-12-07', log:{ sent:'Nov 25 · 20:16' } },
+  { id:'s4', role:'sent', item:'tripod', p:'ruben', status:'borrowed', start:'2026-11-20', end:'2026-12-02', log:{ sent:'Nov 17 · 11:02', approved:'Nov 17 · 16:40', ready:'Nov 20 · 10:02', pickedUp:'Nov 20 · 10:05' } },
+  { id:'s5', role:'sent', item:'grinder', p:'bruno', status:'overdue', start:'2026-11-18', end:'2026-11-24', log:{ sent:'Nov 15 · 08:30', approved:'Nov 15 · 12:11', ready:'Nov 18 · 18:20', pickedUp:'Nov 18 · 18:24' } },
+  { id:'s6', role:'sent', item:'softbox', p:'trevis', status:'returnPending', start:'2026-11-15', end:'2026-11-22', log:{ sent:'Nov 12 · 19:45', approved:'Nov 13 · 09:00', ready:'Nov 15 · 17:30', pickedUp:'Nov 15 · 17:33', returnMarked:'Nov 22 · 19:30' } },
+  { id:'s7', role:'sent', item:'drill', p:'david', status:'returned', start:'2026-11-10', end:'2026-11-14', log:{ sent:'Nov 7 · 13:10', approved:'Nov 7 · 15:22', ready:'Nov 10 · 09:15', pickedUp:'Nov 10 · 09:18', returned:'Nov 14 · 18:20' } },
+  { id:'s8', role:'sent', item:'drone', p:'sara', status:'declined', start:'2026-11-01', end:'2026-11-03', log:{ sent:'Oct 28 · 21:05', declined:'Oct 29 · 11:48' } },
+  { id:'s9', role:'sent', item:'chair', p:'laura', status:'cancelled', prev:'approved', by:'you', start:'2026-10-10', end:'2026-10-12', log:{ sent:'Oct 4 · 10:00', approved:'Oct 4 · 12:30', cancelled:'Oct 8 · 08:15' } },
+  { id:'r1', role:'received', item:'projector', p:'laura', status:'pending', start:'2026-12-12', end:'2026-12-14', log:{ sent:'Today · 08:52' } },
+  { id:'r2', role:'received', item:'drill', p:'bruno', status:'approved', start:'2026-11-27', end:'2026-11-29', log:{ sent:'Nov 24 · 17:20', approved:'Nov 24 · 19:02' } },
+  { id:'r3', role:'received', item:'tripod', p:'sara', status:'ready', start:'2026-11-26', end:'2026-11-28', log:{ sent:'Nov 23 · 10:40', approved:'Nov 23 · 12:15', ready:'Today · 10:05' } },
+  { id:'r4', role:'received', item:'cooler', p:'emma', status:'borrowed', start:'2026-11-23', end:'2026-11-30', log:{ sent:'Nov 19 · 09:00', approved:'Nov 19 · 10:30', ready:'Nov 23 · 18:00', pickedUp:'Nov 23 · 18:04' } },
+  { id:'r5', role:'received', item:'drone', p:'ruben', status:'overdue', start:'2026-11-19', end:'2026-11-23', log:{ sent:'Nov 16 · 14:00', approved:'Nov 16 · 15:10', ready:'Nov 19 · 11:00', pickedUp:'Nov 19 · 11:06' } },
+  { id:'r6', role:'received', item:'softbox', p:'david', status:'returnPending', start:'2026-11-16', end:'2026-11-21', log:{ sent:'Nov 13 · 12:00', approved:'Nov 13 · 13:45', ready:'Nov 16 · 19:00', pickedUp:'Nov 16 · 19:02', returnMarked:'Today · 08:10' } },
+  { id:'r7', role:'received', item:'grinder', p:'trevis', status:'returned', start:'2026-11-05', end:'2026-11-08', log:{ sent:'Nov 2 · 16:20', approved:'Nov 2 · 18:00', ready:'Nov 5 · 10:00', pickedUp:'Nov 5 · 10:03', returned:'Nov 8 · 17:45' } },
+  { id:'r9', role:'received', item:'drone', p:'laura', status:'declined', start:'2026-11-08', end:'2026-11-09', log:{ sent:'Nov 3 · 18:20', declined:'Nov 4 · 09:10' } },
+  { id:'r8', role:'received', item:'chair', p:'marc', status:'cancelled', prev:'approved', by:'Marc', start:'2026-11-14', end:'2026-11-16', log:{ sent:'Nov 9 · 09:30', approved:'Nov 9 · 11:00', cancelled:'Nov 12 · 20:40' } },
+];
+const TODAY = new Date(2026, 10, 26);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const sd = d => `${MON[d.getMonth()]} ${d.getDate()}`;
+const dayDiff = (a,b) => Math.round((b - a) / 864e5);
+const ICONS = {
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>', ret:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  box:'<path d="M3.5 8 12 3.5 20.5 8v8L12 20.5 3.5 16z"/><path d="M3.5 8 12 12.5 20.5 8M12 12.5v8"/>',
+  swap:'<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>', alert:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16v.5"/>',
+  hour:'<path d="M7 3.5h10M7 20.5h10M8 3.5c0 5 8 4.5 8 8.5s-8 3.5-8 8.5M16 3.5c0 5-8 4.5-8 8.5s8 3.5 8 8.5"/>',
+  ban:'<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>', pin:'<path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/>', ext:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>',
+  hand:'<path d="M4 13.5 8.5 18H15l5-5.5-1.6-1.4L15 14H10"/><path d="M4 13.5 7 10.5h5.5l1.5 1.5-1 1H10"/>',
+};
+const ic = (k, c, sw = 2) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`);
+const BADGE = {
+  pending:['Pending','#FFF4CC','#8A6100','clock'], approved:['Approved','#E1F0DA','#2C6B34','check'],
+  ready:['Ready for Pickup','#FFE48A','#6B4A00','box'], borrowed:['Borrowed','#E9DDF5','#5A2D8C','swap'],
+  overdue:['Overdue','#FCE1DD','#B3261E','alert'], returnPending:['Return Pending','#F1EAF9','#7040A0','hour'],
+  returned:['Returned','#E9DDF5','#7040A0','ret'], declined:['Declined','#FDE3E1','#C62828','x'], cancelled:['Cancelled','#E4E9E1','#56655B','ban'],
+};
+const badge = s => { const [label,bg,fg,k] = BADGE[s]; return { label, bg, fg, icon: ic(k, fg, 2.1) }; };
+const FILTERS = { all:null, pending:['pending'], approved:['approved','ready'], active:['borrowed','overdue','returnPending'], declined:['declined'], returned:['returned'], cancelled:['cancelled'] };
+const DONE = { pending:1, approved:2, ready:3, borrowed:4, overdue:4, returnPending:4, returned:5 };
+const nowStr = () => { const d = new Date(); return `Today · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+
+const AUTH_GATE = true;
+class Component extends DCLogic {
+  _authed() { try { return localStorage.getItem('syt-auth') === 'in'; } catch (_) { return false; } }
+  openAuth(intent, mode) { this.setState({ authOpen:true, authMode: mode || 'signin', authIntent: intent || null }); }
+  renderVals() {
+    const authed = this._authed();
+    if (AUTH_GATE && !authed && !this._gated) { this._gated = true; setTimeout(() => this.openAuth(null, 'signin'), 0); }
+    const base = this._rv();
+    const guard = href => e => { if (this._authed()) return; e.preventDefault(); this.openAuth({ href }); };
+    const w = document.documentElement.clientWidth || window.innerWidth || 1440;
+    return { ...base, authed, guest: !authed, authOpen: !!this.state.authOpen, authMode: this.state.authMode || 'signin',
+      footX: w < 760 ? '14px' : w < 1100 ? '32px' : '56px',
+      guard: { borrowing: guard('Borrowing.dc.html'), lending: guard('Lending.dc.html'), share: guard('Share a Tool.dc.html'), profile: guard('My Profile.dc.html') },
+      openLogin: () => this.openAuth(null, 'signin'),
+      authClose: () => { this.setState({ authOpen:false, authIntent:null }); if (AUTH_GATE && !this._authed()) location.href = 'Explore.dc.html'; },
+      authSuccess: () => { try { localStorage.setItem('syt-auth', 'in'); } catch (_) {} const it = this.state.authIntent; this.setState({ authOpen:false, authIntent:null, authTick: Date.now() }); if (it && it.href) location.href = it.href; else if (it && it.run) setTimeout(it.run, 60); },
+    };
+  }
+
+  state = { w: (typeof window !== 'undefined' && window.innerWidth) || 1440, tab: ROLE, filter:'all', sel:{ sent:'s1', received:'r1' }, open:false, reqs: SEED.map(r => ({ ...r, log:{ ...r.log } })), modal:null, toast:null };
+  ensureWatch() {
+    if (this._ro) return;
+    const read = () => { const w = document.documentElement.clientWidth || window.innerWidth; this.setState({ w, _tick: (this.state._tick || 0) + 1 }); };
+    this._ro = new ResizeObserver(read); this._ro.observe(document.documentElement);
+    window.addEventListener('resize', read); this._read = read;
+    requestAnimationFrame(read); setTimeout(read, 300);
+  }
+  componentDidMount() { this.ensureWatch(); }
+  componentWillUnmount() { this._ro && this._ro.disconnect(); window.removeEventListener('resize', this._read); this._ro = null; clearTimeout(this._t); }
+
+  flash(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast:null }), 3800); }
+  update(id, patch, logKey) {
+    this.setState(s => ({ reqs: s.reqs.map(x => x.id === id ? { ...x, ...patch, log: logKey ? { ...x.log, [logKey]: nowStr() } : x.log } : x) }));
+  }
+  act(r, type) {
+    const first = PEOPLE[r.p][0].split(' ')[0];
+    switch (type) {
+      case 'approve': this.update(r.id, { status:'approved' }, 'approved'); return this.flash(`Request approved · ${first} has been notified.`);
+      case 'decline': this.update(r.id, { status:'declined' }, 'declined'); return this.flash(`Request declined · ${first} has been notified.`);
+      case 'ready': this.update(r.id, { status:'ready' }, 'ready'); return this.flash(`Marked ready · ${first} was notified to confirm pickup.`);
+      case 'pickup': this.update(r.id, { status:'borrowed' }, 'pickedUp'); return this.flash(`Pickup confirmed · the loan has started. ${first} has been notified.`);
+      case 'markReturned': this.update(r.id, { status:'returnPending' }, 'returnMarked'); return this.flash(`Marked as returned · waiting for ${first} to confirm.`);
+      case 'confirmReturn': this.update(r.id, { status:'returned' }, 'returned'); return this.flash(`Return confirmed · loan completed. ${first} has been notified.`);
+      case 'extension': return this.flash(`Extension request sent to ${first}.`);
+      case 'details': window.location.href = 'Explore.dc.html'; return;
+      case 'address': case 'cancel': return this.setState({ modal:{ kind:type, id:r.id } });
+    }
+  }
+  confirmCancel() {
+    const r = this.state.reqs.find(x => x.id === this.state.modal.id);
+    const first = PEOPLE[r.p][0].split(' ')[0];
+    this.update(r.id, { status:'cancelled', prev:r.status, by:'you' }, 'cancelled');
+    this.setState({ modal:null });
+    this.flash(`Cancelled · ${first} has been notified and the dates were released.`);
+  }
+
+  actions(r, first) {
+    const own = r.role === 'received';
+    const mk = (label, kind, type, icon) => ({ label, primary:kind==='p', secondary:kind==='s', ghost:kind==='g', info:false, onClick:() => this.act(r, type), icon: ic(icon, kind==='p' ? '#FFFFFF' : kind==='g' ? '#B3261E' : '#7040A0') });
+    const info = (label, s, icon) => { const b = BADGE[s]; return { label, info:true, bg:b[1], fg:b[2], icon: ic(icon, b[2]) }; };
+    const details = mk('See Product Details','s','details','info');
+    const cancelReq = mk('Cancel Request','g','cancel','ban');
+    const cancelLoan = mk('Cancel Loan','g','cancel','ban');
+    if (!own) return ({
+      pending:[details, cancelReq],
+      approved:[mk('View Pickup Address','p','address','pin'), details, cancelReq],
+      ready:[mk('Confirm Pickup','p','pickup','hand'), cancelReq],
+      borrowed:[mk('Mark as Returned','p','markReturned','ret'), details],
+      overdue:[mk('Request Extension','p','extension','ext'), mk('Mark as Returned','s','markReturned','ret'), details],
+      returnPending:[info('Waiting for owner confirmation','returnPending','hour')],
+      returned:[details], declined:[details], cancelled:[details],
+    })[r.status];
+    return ({
+      pending:[mk('Approve','p','approve','check'), mk('Decline','s','decline','x'), cancelReq],
+      approved:[mk('Item ready for pickup','p','ready','box'), mk('View Pickup Address','s','address','pin'), cancelLoan],
+      ready:[info(`Waiting for ${first} to confirm pickup`,'ready','clock'), cancelLoan],
+      returnPending:[mk('Confirm Return','p','confirmReturn','check')],
+    })[r.status] || [];
+  }
+
+  banner(r, first, endS, left) {
+    const own = r.role === 'received'; const item = ITEM[r.item].toLowerCase();
+    const B = (s, title, text, k) => { const b = BADGE[s]; return { title, text, bg:b[1], fg:b[2], bd:'rgba(0,0,0,.04)', icon: ic(k || b[3], b[2]) }; };
+    const by = r.by === 'you' ? 'you' : first;
+    const M = own ? {
+      pending: B('pending','New request', `${first} wants to borrow your ${item}. Approve or decline to let them know.`),
+      approved: B('approved','Pickup coming up', `Meet ${first} at your pickup address. When you hand over the ${item}, tap Item ready for pickup.`),
+      ready: B('ready','Waiting for pickup confirmation', `${first} has been notified. The loan starts only once ${first} confirms receipt.`),
+      borrowed: B('borrowed','On loan', `With ${first} · due back ${endS} (${left} day${left===1?'':'s'} left).`),
+      overdue: B('overdue','Overdue', `Was due back ${endS} · ${-left} day${left===-1?'':'s'} late. ${first} has been reminded.`),
+      returnPending: B('returnPending','Confirm the return', `${first} marked the ${item} as returned. Confirm once you have it back.`),
+      returned: B('returned','Loan completed', `Both of you confirmed the return on ${r.log.returned}.`),
+      declined: B('declined','Declined', `You declined this request.`),
+      cancelled: B('cancelled', `Cancelled by ${by}`, `${r.log.cancelled} · the reserved dates were released.`),
+    } : {
+      pending: B('pending','Waiting for approval', `${first} hasn't responded yet. You'll be notified when they do.`),
+      approved: B('approved','Request approved', `Pick up the ${item} from ${first} at the pickup address.`),
+      ready: B('ready','Ready for pickup', `${first} marked the ${item} as ready. Confirm once it's in your hands — the loan starts when you confirm.`),
+      borrowed: B('borrowed','On loan', `Return to ${first} by ${endS} (${left} day${left===1?'':'s'} left).`),
+      overdue: B('overdue','Overdue', `Return was due ${endS} · ${-left} day${left===-1?'':'s'} late. Return it or request an extension.`),
+      returnPending: B('returnPending','Waiting for owner confirmation', `You marked the ${item} as returned. ${first} needs to confirm receipt.`),
+      returned: B('returned','Loan completed', `${first} confirmed the return on ${r.log.returned}.`),
+      declined: B('declined','Declined', `${first} declined this request.`),
+      cancelled: B('cancelled', `Cancelled by ${by}`, `${r.log.cancelled} · the reserved dates were released.`),
+    };
+    return M[r.status];
+  }
+
+  steps(r, first, endS) {
+    const own = r.role === 'received';
+    const base = [
+      { k:'sent', title: own ? 'Request received' : 'Request sent', todo:'' },
+      { k:'approved', title:'Approved', todo: own ? 'Approve or decline the request' : `Waiting for ${first} to approve` },
+      { k:'ready', title:'Ready for pickup', todo: own ? `Hand over the item to ${first}` : `Coordinate with ${first} to collect the item` },
+      { k:'pickedUp', title:'Picked up', todo: own ? `${first} confirms receipt` : 'Confirm once the item is in your hands' },
+      { k:'returned', title:'Returned', todo: `Return by ${endS}` },
+    ];
+    const st = (o, kind) => {
+      const T = {
+        done:['#2EA44F','#2EA44F',ic('check','#FFFFFF',2.6)], current:['#F3ECFA','#7040A0',null], todo:['transparent','rgba(47,70,54,.25)',null],
+        yellow:['#FFE48A','#E0A800',null], red:['#FCE1DD','#D93A2B',null], lav:['#E9DDF5','#7040A0',null],
+        failed:['#C62828','#C62828',ic('x','#FFFFFF',2.6)], cancel:['#7A867E','#7A867E',ic('x','#FFFFFF',2.6)],
+      }[kind];
+      return { ...o, dotBg:T[0], dotBd:T[1], icon:T[2], titleColor: kind === 'todo' ? '#7D8C82' : '#2F4636', kind };
+    };
+    let out;
+    if (r.status === 'declined') out = [st({ title:base[0].title, sub:r.log.sent }, 'done'), st({ title:'Declined', sub:r.log.declined }, 'failed')];
+    else if (r.status === 'cancelled') {
+      const n = DONE[r.prev] || 1;
+      out = base.slice(0, n).map(b => st({ title:b.title, sub:r.log[b.k] }, 'done'));
+      out.push(st({ title:`Cancelled by ${r.by === 'you' ? 'you' : first}`, sub:`${r.log.cancelled} · dates released` }, 'cancel'));
+    } else {
+      const n = DONE[r.status];
+      out = base.map((b, i) => {
+        if (i < n) return st({ title:b.title, sub:r.log[b.k] }, 'done');
+        if (i === n) {
+          if (r.status === 'ready') return st({ title:'Pickup confirmation', sub: own ? `Waiting for ${first} to confirm receipt` : 'Tap Confirm Pickup once you have the item' }, 'yellow');
+          if (r.status === 'overdue') return st({ title:'Return overdue', sub:`Was due ${endS}` }, 'red');
+          if (r.status === 'returnPending') return st({ title:'Return pending', sub: own ? `${first} marked it returned · ${r.log.returnMarked}` : `Waiting for owner confirmation · ${r.log.returnMarked}` }, 'lav');
+          return st({ title:b.title, sub:b.todo }, 'current');
+        }
+        return st({ title:b.title, sub:b.todo }, 'todo');
+      });
+    }
+    return out.map((s, i) => ({ ...s, line: i < out.length - 1, lineColor: s.kind === 'done' && out[i+1].kind === 'done' ? '#2EA44F' : 'rgba(47,70,54,.18)' }));
+  }
+
+  needs(r) {
+    const own = r.role === 'received';
+    if (own) return ({ pending:'Respond to request', approved:'Mark ready at handover', returnPending:'Confirm return' })[r.status] || null;
+    return ({ ready:'Confirm pickup', overdue:'Return overdue' })[r.status] || null;
+  }
+
+  _rv() {
+    this.ensureWatch();
+    const { tab, filter, sel, open, reqs, modal } = this.state;
+    const w = document.documentElement.clientWidth || window.innerWidth || this.state.w || 1440;
+    const mobile = w < 760, split = w >= 1000;
+    const showDetail = split || open, showList = split || !open;
+    const L = {
+      desktop: !mobile, mobileList: mobile && !open, mobileDetail: mobile && open, split,
+      showHead: showList, showList, showDetail, showBackLink: !split && !mobile && open,
+      wideCard: !mobile, compactCard: mobile,
+      pageBottom: mobile ? (open ? '0px' : '96px') : '64px',
+      navPad: w < 1100 ? '3px 12px 0' : '3px 20px 0', hdrPad: w < 1100 ? '0 32px' : '0 56px',
+      mainPad: mobile ? (open ? '12px 12px 0' : '22px 16px 0') : (w < 1100 ? '36px 32px 0' : '36px 56px 0'),
+      h1: mobile ? '34px' : '44px', lead: mobile ? '15px' : '17px', h2: mobile ? '28px' : '32px',
+      tabsW: mobile ? '100%' : 'auto', tabWord: mobile ? 'none' : 'inline',
+      chipMargin: mobile ? '18px -16px 18px' : '26px 0 28px', chipPad: mobile ? '2px 16px' : '2px 0', chipH: mobile ? '44px' : '46px',
+      cols: split ? 'minmax(0,1.08fr) minmax(420px,1fr)' : 'minmax(0,1fr)', listGap: mobile ? '12px' : '14px',
+      detailPos: split ? 'sticky' : 'static', detailPad: mobile ? '10px' : '18px', detailInner: mobile ? '0 8px' : '0 6px',
+      heroRatio: mobile ? '4 / 3' : '16 / 9',
+      actPos: mobile ? 'sticky' : 'relative', actPad: mobile ? '14px 8px calc(14px + env(safe-area-inset-bottom))' : '18px 6px 2px',
+      actMargin: mobile ? '8px -10px -10px' : '4px 0 0', actRadius: mobile ? '0 0 22px 22px' : '0',
+      modalAlign: mobile ? 'flex-end' : 'center', modalPad: mobile ? '12px' : '24px', toastBottom: mobile ? (open ? '120px' : '92px') : '32px',
+    };
+    const mine = reqs.filter(r => r.role === tab);
+    const f = FILTERS[filter];
+    const rows = mine.filter(r => !f || f.includes(r.status));
+    const selId = sel[tab];
+    const list = rows.map(r => {
+      const [name, bldg] = PEOPLE[r.p]; const s = pd(r.start), e = pd(r.end);
+      const on = split && r.id === selId;
+      return { id:r.id, name:ITEM[r.item], img:`img/${r.item}.jpg`, avatar:`img/av-${r.p}.jpg`, person:name, bldg,
+        range:`${sd(s)} – ${sd(e)}, ${e.getFullYear()}`, rangeShort:`${sd(s)} – ${sd(e)}`, b:badge(r.status), needs:this.needs(r),
+        bg: on ? '#F5EEFB' : '#FAFBF8', bd: on ? '#B796D8' : 'rgba(47,70,54,.07)',
+        select: () => this.setState(st => ({ sel:{ ...st.sel, [tab]:r.id }, open:true })) };
+    });
+    const cur = mine.find(r => r.id === selId) || mine[0];
+    let d = null;
+    if (cur) {
+      const [pname, bldg, since] = PEOPLE[cur.p]; const first = pname.split(' ')[0];
+      const s = pd(cur.start), e = pd(cur.end); const n = dayDiff(s, e) + 1; const left = dayDiff(TODAY, e);
+      const acts = this.actions(cur, first) || [];
+      d = { name:ITEM[cur.item], img:`img/${cur.item}.jpg`, avatar:`img/av-${cur.p}.jpg`, person:pname,
+        roleLabel: cur.role === 'sent' ? 'Owner' : 'Borrower', meta:`${bldg} · Member since ${since}`,
+        fullName: FULL[cur.p], place:`${bldg} · Gent`, profileHref:`User Profile.dc.html?u=${cur.p}`,
+        mapNote: ['pending','declined','cancelled'].includes(cur.status) ? 'Exact address shared after approval' : 'Exact address available via View Pickup Address',
+        periodLabel: cur.status === 'cancelled' || cur.status === 'declined' ? 'Requested period' : 'Loan period',
+        range:`${sd(s)} – ${sd(e)}, ${e.getFullYear()}`, days:`${n} day${n===1?'':'s'}`, b:badge(cur.status),
+        banner:this.banner(cur, first, sd(e), left), steps:this.steps(cur, first, sd(e)), actions:acts, hasActions: acts.length > 0 };
+    }
+    const tabStyle = (on, n) => on
+      ? { bg:'#7040A0', fg:'#FFFFFF', fw:700, sh:'0 6px 16px rgba(112,64,160,.25)', cbg:'rgba(255,255,255,.22)', cfg:'#FFFFFF', n }
+      : { bg:'transparent', fg:'#2F4636', fw:600, sh:'none', cbg:'#E9DDF5', cfg:'#5A2D8C', n };
+    const t = { sent: tabStyle(tab === 'sent', reqs.filter(r => r.role === 'sent').length), recv: tabStyle(tab === 'received', reqs.filter(r => r.role === 'received').length) };
+    const c = {}, pick = {};
+    Object.keys(FILTERS).forEach(k => {
+      c[k] = k === filter ? { bg:'#7040A0', fg:'#FFFFFF', bd:'#7040A0', fw:600, sh:'0 6px 16px rgba(112,64,160,.25)' }
+                          : { bg:'#FAFBF8', fg:'#2F4636', bd:'rgba(47,70,54,.08)', fw:500, sh:'0 1px 2px rgba(47,70,54,.05)' };
+      pick[k] = () => this.setState({ filter:k });
+    });
+    let m = null;
+    if (modal) {
+      const r = reqs.find(x => x.id === modal.id); const [pname, bldg] = PEOPLE[r.p]; const first = pname.split(' ')[0];
+      const s = pd(r.start), e = pd(r.end); const loan = r.role === 'received' && r.status !== 'pending';
+      if (modal.kind === 'cancel') m = { icon:ic('ban','#B3261E'), iconBg:'#FCE1DD', title: loan ? 'Cancel this loan?' : 'Cancel this request?',
+        body:`${first} will be notified and ${sd(s)} – ${sd(e)} will be released for other neighbours. The request stays in your history.`,
+        keepLabel: loan ? 'Keep loan' : 'Keep request', confirmLabel: loan ? 'Yes, cancel loan' : 'Yes, cancel request', confirm: () => this.confirmCancel() };
+      else m = { icon:ic('pin','#7040A0'), iconBg:'#E9DDF5', title:'Pickup address',
+        body: r.role === 'sent' ? `Collect the ${ITEM[r.item].toLowerCase()} from ${first} on ${sd(s)}.` : `${first} will collect the ${ITEM[r.item].toLowerCase()} from you on ${sd(s)}.`,
+        address: r.role === 'sent' ? `${bldg} · Floor 2, Door 2B` : ME_ADDR, addressNote:'Main lobby, next to the mailboxes. Only shared with approved neighbours.', keepLabel:'Close', confirm:null };
+    }
+    return {
+      L, list, empty: list.length === 0, d, t, c, pick, modal:m, toast:this.state.toast,
+      lead: tab === 'sent' ? 'Track your borrowing requests and their status.' : 'Manage requests from neighbours who want to borrow your items.',
+      detailTitle: tab === 'sent' ? 'My Request' : 'Received Request',
+      tabSent: () => this.setState({ tab:'sent', filter:'all', open:false }),
+      tabRecv: () => this.setState({ tab:'received', filter:'all', open:false }),
+      back: () => this.setState({ open:false }),
+      closeModal: () => this.setState({ modal:null }),
+      stop: e => e.stopPropagation(),
+    };
+  }
+}
+</script>
+</body>
+</html>

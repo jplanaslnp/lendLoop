@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+html,body{margin:0;background:#E8F0E2;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#2F4636;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:#7040A0;text-decoration:none}a:hover{color:#5A3086}
+button,textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#E8F0E2;padding-bottom:{{ L.pageBottom }}">
+
+  <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid rgba(47,70,54,.07)">
+      <div style="max-width:1440px;margin:0 auto;padding:{{ L.hdrPad }};height:68px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px">
+        <a href="Explore.dc.html" style="display:flex;align-items:center;gap:10px;color:#5A2D8C">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:21px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C;white-space:nowrap">Share your tool</span>
+        </a>
+        <nav style="display:flex;align-items:stretch;gap:8px;height:68px">
+          <a href="Explore.dc.html" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:700;color:#7040A0;border-bottom:3px solid #7040A0;white-space:nowrap">Explore</a>
+          <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Borrowing<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+          <a href="Lending.dc.html" onClick="{{ guard.lending }}" style="position:relative;display:flex;align-items:center;padding:{{ L.navPad }};font-size:16px;font-weight:500;color:#2F4636;border-bottom:3px solid transparent;white-space:nowrap" style-hover="color:#7040A0">Lending<span style="position:absolute;top:18px;right:10px;width:7px;height:7px;border-radius:50%;background:#7040A0"></span></a>
+        </nav>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px">
+          <a href="Share a Tool.dc.html" onClick="{{ guard.share }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:999px;background:#7040A0;color:#FFFFFF;font-size:15px;font-weight:600;box-shadow:0 6px 16px rgba(112,64,160,.22)" style-hover="background:#5F3290;color:#FFFFFF">
+            <svg width="18" height="18" style="flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Share a tool</a>
+          <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><a href="My Profile.dc.html" onClick="{{ guard.profile }}" style="display:flex;align-items:center;gap:6px;color:#2F4636">
+            <img src="img/av-jaume.jpg" alt="Profile" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #FAFBF8;box-shadow:0 1px 4px rgba(47,70,54,.15)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </a></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openLogin }}" style="flex:none;white-space:nowrap;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21c1-4 4-6 7.5-6s6.5 2 7.5 6"></path></svg>Login / Register</button></sc-if>
+        </div>
+      </div>
+    </header>
+  </sc-if>
+
+  <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+    <header style="position:sticky;top:0;z-index:20;background:rgba(246,249,243,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(47,70,54,.06)">
+      <div style="height:60px;padding:0 12px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center">
+        <button onClick="{{ goBack }}" aria-label="Back" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#2F4636;box-shadow:0 1px 3px rgba(47,70,54,.08)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <a href="Explore.dc.html" style="justify-self:center;display:flex;align-items:center;gap:7px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#7040A0" stroke="#7040A0" stroke-width="1.2" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span style="font-size:16px;font-weight:800;letter-spacing:-0.02em;color:#5A2D8C">Share your tool</span>
+        </a>
+        <span></span>
+      </div>
+    </header>
+  </sc-if>
+
+  <main style="max-width:1200px;margin:0 auto;padding:{{ L.mainPad }};box-sizing:border-box">
+    <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ goBack }}" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 16px 0 12px;border-radius:999px;border:1px solid rgba(47,70,54,.08);background:#FAFBF8;color:#2F4636;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap" style-hover="background:#FFFFFF">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>{{ backLabel }}</button>
+      <h1 style="margin:18px 0 0;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-0.03em;color:#2F4636">DJI Osmo Mobile</h1>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:8px;font-size:16px;color:#4F6355"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="12" rx="1.5"></rect><path d="M9 20h6M12 16.5V20"></path></svg>Electronics</span>
+        <span style="display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;background:#E1F0DA;color:#1F5A2C;font-size:14px;font-weight:700"><span style="width:8px;height:8px;border-radius:50%;background:#2EA44F"></span>Available</span>
+      </div>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:{{ L.cols }};gap:{{ L.colGap }};align-items:start;margin-top:{{ L.gridTop }}">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:{{ L.blockGap }}">
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="position:relative;aspect-ratio:{{ L.heroRatio }};border-radius:{{ L.heroRadius }};overflow:hidden;background:#EFE7EC;box-shadow:0 1px 2px rgba(47,70,54,.05),0 16px 40px -18px rgba(47,70,54,.25)">
+            <sc-if value="{{ g.isImg }}" hint-placeholder-val="{{ false }}"><img src="{{ g.src }}" alt="DJI Osmo Mobile" style="display:block;width:100%;height:100%;object-fit:cover"></sc-if>
+            <sc-if value="{{ g.isSlot }}" hint-placeholder-val="{{ false }}"><image-slot id="{{ g.slotId }}" shape="rect" placeholder="{{ g.slotLabel }}" style="position:absolute;inset:0"></image-slot></sc-if>
+            <button onClick="{{ prev }}" aria-label="Previous photo" style="position:absolute;left:14px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(250,251,248,.94);color:#2F4636;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(47,70,54,.18)" style-hover="background:#FFFFFF">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+            <button onClick="{{ next }}" aria-label="Next photo" style="position:absolute;right:14px;top:50%;margin-top:-22px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(250,251,248,.94);color:#2F4636;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(47,70,54,.18)" style-hover="background:#FFFFFF">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+            <span style="position:absolute;right:14px;bottom:14px;height:28px;padding:0 12px;display:flex;align-items:center;border-radius:999px;background:rgba(47,70,54,.72);color:#FFFFFF;font-size:13px;font-weight:600;pointer-events:none">{{ g.counter }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,{{ L.thumbW }});gap:10px">
+            <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.pick }}" aria-label="{{ t.label }}" style="position:relative;padding:0;aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:2px solid {{ t.bd }};background:#EFE7EC;cursor:pointer;opacity:{{ t.op }};transition:opacity .15s,border-color .15s">
+                <sc-if value="{{ t.isImg }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;background-image:url({{ t.src }});background-size:cover;background-position:center"></span></sc-if>
+                <sc-if value="{{ t.isSlot }}" hint-placeholder-val="{{ false }}"><image-slot id="{{ t.slotId }}" shape="rect" placeholder="{{ t.short }}" style="position:absolute;inset:0;pointer-events:none"></image-slot></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <h1 style="margin:0;font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-0.02em;color:#2F4636">DJI Osmo Mobile</h1>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
+              <span style="display:flex;align-items:center;gap:7px;font-size:14.5px;color:#4F6355"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="12" rx="1.5"></rect><path d="M9 20h6M12 16.5V20"></path></svg>Electronics</span>
+              <span style="display:flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#E1F0DA;color:#1F5A2C;font-size:13px;font-weight:700"><span style="width:7px;height:7px;border-radius:50%;background:#2EA44F"></span>Available</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <section style="background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:{{ L.cardPad }};box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.16);display:flex;flex-direction:column">
+          <div>
+            <h2 style="margin:0;font-size:{{ L.h3 }};font-weight:800;color:#2F4636">Description</h2>
+            <p style="margin:8px 0 0;font-size:{{ L.body }};line-height:1.6;color:#3E5444;text-wrap:pretty">Handheld smartphone gimbal that stabilizes your videos and photos for smooth, professional results. Easy to use, lightweight and perfect for travel, events or everyday filming. Folds down small enough for a backpack, and the mini tripod doubles as a handle for longer shots.</p>
+          </div>
+
+          <div style="height:1px;background:rgba(47,70,54,.1);margin:{{ L.divider }}"></div>
+
+          <div style="display:grid;grid-template-columns:{{ L.condCols }};gap:{{ L.condGap }}">
+            <div>
+              <h3 style="margin:0;font-size:{{ L.h4 }};font-weight:800;color:#2F4636">Condition</h3>
+              <span style="display:inline-flex;align-items:center;height:32px;margin-top:10px;padding:0 14px;border-radius:999px;background:#E9DDF5;color:#5A2D8C;font-size:14px;font-weight:700">Like New</span>
+              <p style="margin:8px 0 0;font-size:13.5px;line-height:1.45;color:#556A5B">Used a handful of times, no visible wear.</p>
+            </div>
+            <div style="min-width:0">
+              <h3 style="margin:0;font-size:{{ L.h4 }};font-weight:800;color:#2F4636">Item details</h3>
+              <dl style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 18px;margin:12px 0 0;font-size:14.5px">
+                <dt style="color:#556A5B">Brand</dt><dd style="margin:0;color:#2F4636;font-weight:600">DJI</dd>
+                <dt style="color:#556A5B">Model</dt><dd style="margin:0;color:#2F4636;font-weight:600">Osmo Mobile</dd>
+                <dt style="color:#556A5B">Includes</dt><dd style="margin:0;color:#2F4636;font-weight:600">Gimbal, mini tripod, charging cable</dd>
+                <dt style="color:#556A5B">Max. loan</dt><dd style="margin:0;color:#2F4636;font-weight:600">Up to 7 days</dd>
+              </dl>
+            </div>
+          </div>
+
+          <div style="height:1px;background:rgba(47,70,54,.1);margin:{{ L.divider }}"></div>
+
+          <div ref="{{ datesRef }}">
+            <h2 style="margin:0;font-size:{{ L.h3 }};font-weight:800;color:#2F4636">Choose your dates</h2>
+            <p style="margin:6px 0 0;font-size:14.5px;color:#556A5B">Select the period you'd like to borrow this item.</p>
+            <button onClick="{{ toggleCal }}" aria-expanded="{{ calOpen }}" style="width:100%;margin-top:14px;display:grid;grid-template-columns:{{ L.fieldCols }};align-items:center;gap:10px;min-height:54px;padding:0 16px;border-radius:14px;border:1.5px solid {{ field.bd }};background:#FFFFFF;cursor:pointer;text-align:left;box-shadow:{{ field.sh }}">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+              <span style="font-size:15px;font-weight:{{ field.sw }};color:{{ field.sc }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ field.start }}</span>
+              <span style="color:#8A988E">–</span>
+              <span style="font-size:15px;font-weight:{{ field.ew }};color:{{ field.ec }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ field.end }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate({{ calRot }});transition:transform .2s"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+
+            <sc-if value="{{ calOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px;padding:{{ L.calPad }};border-radius:16px;border:1px solid rgba(47,70,54,.1);background:#FFFFFF;box-shadow:0 14px 34px -18px rgba(47,70,54,.3)">
+                <div style="display:grid;grid-template-columns:{{ L.calCols }};gap:28px">
+                  <sc-for list="{{ months }}" as="m" hint-placeholder-count="1">
+                    <div style="min-width:0">
+                      <div style="display:grid;grid-template-columns:40px 1fr 40px;align-items:center;margin-bottom:10px">
+                        <button onClick="{{ m.prev }}" aria-label="Previous month" disabled="{{ m.prevDisabled }}" style="width:40px;height:40px;border-radius:50%;border:none;background:none;color:#2F4636;display:{{ m.prevDisplay }};align-items:center;justify-content:center;cursor:pointer;opacity:{{ m.prevOp }}" style-hover="background:#EEF3EA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+                        <span style="grid-column:2;text-align:center;font-size:15.5px;font-weight:800;color:#2F4636">{{ m.title }}</span>
+                        <button onClick="{{ m.next }}" aria-label="Next month" style="grid-column:3;width:40px;height:40px;border-radius:50%;border:none;background:none;color:#2F4636;display:{{ m.nextDisplay }};align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3EA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+                      </div>
+                      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:4px">
+                        <sc-for list="{{ weekdays }}" as="wd" hint-placeholder-count="7"><span style="text-align:center;font-size:12px;font-weight:700;color:#8A988E;padding-bottom:6px">{{ wd }}</span></sc-for>
+                        <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="35">
+                          <div style="display:flex;justify-content:center;background:{{ c.band }};border-radius:{{ c.bandRadius }}">
+                            <button onClick="{{ c.pick }}" disabled="{{ c.disabled }}" aria-label="{{ c.aria }}" style="width:{{ L.dayW }};height:{{ L.dayW }};border-radius:50%;border:{{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:{{ c.fw }};text-decoration:{{ c.deco }};cursor:{{ c.cursor }};visibility:{{ c.vis }};padding:0;display:flex;align-items:center;justify-content:center">{{ c.label }}</button>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid rgba(47,70,54,.08)">
+                  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#556A5B">
+                    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:50%;background:#7040A0"></span>Selected</span>
+                    <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:50%;background:#EEE9E9;border:1px solid #E2D7D7"></span>Unavailable</span>
+                  </div>
+                  <sc-if value="{{ hasAny }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearDates }}" style="height:36px;padding:0 12px;border:none;border-radius:999px;background:none;color:#7040A0;font-size:14px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA">Clear dates</button></sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:14px;line-height:1.45;font-weight:600;color:{{ status.fg }}">
+              <span style="flex:none;width:16px;height:16px;margin-top:2px;background-image:url({{ status.icon }});background-size:contain;background-repeat:no-repeat"></span>{{ status.text }}
+            </div>
+          </div>
+        </section>
+
+        <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+          <section style="background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:18px 16px;box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.16)">
+            <h2 style="margin:0 0 12px;font-size:19px;font-weight:800;color:#2F4636">Owner</h2>
+            <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openOwner }}" style="width:100%;display:grid;grid-template-columns:56px minmax(0,1fr) 20px;gap:14px;align-items:center;padding:0;border:none;background:none;cursor:pointer;text-align:left;color:#2F4636">
+              <img src="img/av-ruben.jpg" alt="Ruben G." style="width:56px;height:56px;border-radius:50%;object-fit:cover">
+              <span style="min-width:0"><span style="display:block;font-size:16.5px;font-weight:700">Ruben Garcia</span><span style="display:block;margin-top:2px;font-size:14px;color:#556A5B">Building B · Gent</span><span style="display:block;margin-top:4px;font-size:13.5px;font-weight:700;color:#7040A0">View profile</span></span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </button></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:12px"><p style="margin:0;font-size:14.5px;line-height:1.5;color:#556A5B">Sign in to see who is sharing this item.</p><button onClick="{{ openLogin }}" style="min-height:46px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA">Sign in</button></div></sc-if>
+          </section>
+          <section style="background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;overflow:hidden;box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.16)">
+            <div style="padding:18px 16px 12px"><h2 style="margin:0;font-size:19px;font-weight:800;color:#2F4636">Pickup location</h2></div>
+            <div style="position:relative;aspect-ratio:3/1;background-image:url(img/map.jpg);background-size:cover;background-position:center">
+              <span style="position:absolute;left:51%;top:50%;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;background:rgba(112,64,160,.16);border:2px solid rgba(112,64,160,.5)"></span>
+            </div>
+            <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px">
+              <span style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#2F4636"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg><span>{{ pickupPlace }}</span></span>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#556A5B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg>Exact address shared after approval</span>
+            </div>
+          </section>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ L.desktop }}" hint-placeholder-val="{{ true }}">
+        <aside style="position:{{ L.asidePos }};top:92px;min-width:0;display:flex;flex-direction:column;gap:16px;background:#FAFBF8;border:1px solid rgba(47,70,54,.07);border-radius:22px;padding:18px;box-shadow:0 1px 2px rgba(47,70,54,.04),0 16px 40px -18px rgba(47,70,54,.18)">
+          <div>
+            <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ openRequest }}" disabled="{{ cta.disabled }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;min-height:58px;border:none;border-radius:999px;background:{{ cta.bg }};color:{{ cta.fg }};font-size:17px;font-weight:700;cursor:{{ cta.cursor }};box-shadow:{{ cta.sh }};transition:background .15s">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z"></path></svg>Request to borrow</button>
+              <p style="margin:10px 0 0;text-align:center;font-size:14px;color:#556A5B">{{ cta.hint }}<sc-if value="{{ cta.disabled }}" hint-placeholder-val="{{ true }}"> <button onClick="{{ focusDates }}" style="padding:0;border:none;background:none;color:#7040A0;font-size:14px;font-weight:700;cursor:pointer">Choose dates</button></sc-if></p>
+            </sc-if>
+            <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;border-radius:999px;background:#FFF4CC;color:#8A6100;font-size:16px;font-weight:700"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>Request sent · Pending</div>
+              <p style="margin:10px 0 0;text-align:center;font-size:14px;color:#556A5B">{{ sentText }} <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="font-weight:700">View in Borrowing</a></p>
+            </sc-if>
+          </div>
+
+          <div style="padding:18px 20px;border-radius:16px;background:#F3ECFA;border:1px solid rgba(112,64,160,.1)">
+            <div style="display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;color:#5A2D8C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 11v5M12 8v.5"></path></svg>How it works</div>
+            <ol style="list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+                <li style="display:grid;grid-template-columns:24px 1fr;gap:10px;font-size:14.5px;line-height:1.45;color:#2F4636"><span style="width:24px;height:24px;border-radius:50%;background:#FFFFFF;color:#7040A0;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center">{{ s.n }}</span>{{ s.text }}</li>
+              </sc-for>
+            </ol>
+          </div>
+
+          <div style="border:1px solid rgba(47,70,54,.08);border-radius:16px;background:#FFFFFF;padding:16px">
+            <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:#2F4636">Owner</h2>
+            <sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openOwner }}" style="width:100%;display:grid;grid-template-columns:60px minmax(0,1fr) 20px;gap:14px;align-items:center;padding:0;border:none;background:none;cursor:pointer;text-align:left;color:#2F4636">
+              <img src="img/av-ruben.jpg" alt="Ruben G." style="width:60px;height:60px;border-radius:50%;object-fit:cover">
+              <span style="min-width:0"><span style="display:block;font-size:17px;font-weight:700">Ruben Garcia</span><span style="display:block;margin-top:2px;font-size:14px;color:#556A5B">Building B · Gent</span><span style="display:block;margin-top:4px;font-size:13.5px;font-weight:700;color:#7040A0">View profile</span></span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F4636" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </button></sc-if><sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:12px"><p style="margin:0;font-size:14.5px;line-height:1.5;color:#556A5B">Sign in to see who is sharing this item.</p><button onClick="{{ openLogin }}" style="min-height:46px;border-radius:999px;border:1.5px solid #7040A0;background:#FAFBF8;color:#7040A0;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F3ECFA">Sign in</button></div></sc-if>
+          </div>
+
+          <div style="border:1px solid rgba(47,70,54,.08);border-radius:16px;background:#FFFFFF;overflow:hidden">
+            <div style="position:relative;aspect-ratio:3/1;background-image:url(img/map.jpg);background-size:cover;background-position:center">
+              <span style="position:absolute;left:51%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:rgba(112,64,160,.16);border:2px solid rgba(112,64,160,.5)"></span>
+            </div>
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+              <span style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#2F4636"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg><span>Pickup · {{ pickupPlace }}</span></span>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:#556A5B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg>Exact address shared after approval</span>
+            </div>
+          </div>
+        </aside>
+      </sc-if>
+    </div>
+
+    <section style="margin-top:{{ L.simTop }}">
+      <h2 style="margin:0 0 {{ L.simHeadGap }};font-size:{{ L.simH }};font-weight:800;letter-spacing:-0.02em;color:#2F4636">Similar items nearby</h2>
+      <div style="display:grid;grid-template-columns:{{ L.simCols }};gap:{{ L.simGap }}">
+        <sc-for list="{{ similar }}" as="item" hint-placeholder-count="4">
+          <a href="Product Details.dc.html" style="min-width:0;display:flex;flex-direction:column;background:#FAFBF8;border-radius:{{ L.radius }};overflow:hidden;border:1px solid rgba(47,70,54,.07);box-shadow:0 1px 2px rgba(47,70,54,.04),0 10px 28px -12px rgba(47,70,54,.14);color:#2F4636;transition:transform .25s ease,box-shadow .25s ease" style-hover="transform:translateY(-3px);box-shadow:0 2px 4px rgba(47,70,54,.05),0 22px 40px -16px rgba(47,70,54,.24);color:#2F4636">
+            <div style="position:relative;aspect-ratio:4/3;background-color:#EFE7EC;background-image:url({{ item.img }});background-size:cover;background-position:center">
+              <span style="position:absolute;top:{{ L.badgeInset }};left:{{ L.badgeLeft }};right:{{ L.badgeRight }};display:flex;align-items:center;gap:7px;height:{{ L.badgeH }};padding:0 12px;border-radius:999px;background:{{ item.badgeBg }};color:{{ item.badgeFg }};font-size:{{ L.badgeFs }};font-weight:600;box-shadow:0 2px 8px rgba(47,70,54,.12)"><span style="width:8px;height:8px;border-radius:50%;background:{{ item.dot }}"></span>{{ item.status }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;flex:1;padding:{{ L.bodyPad }}">
+              <h3 style="margin:0;font-size:{{ L.title }};line-height:1.25;font-weight:700;letter-spacing:-0.01em;color:#2F4636">{{ item.name }}</h3>
+              <p style="margin:6px 0 0;font-size:{{ L.desc }};line-height:1.45;color:#556A5B;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em">{{ item.desc }}</p>
+              <div style="height:1px;background:rgba(47,70,54,.1);margin:{{ L.cardDivider }}"></div>
+              <sc-if value="{{ guest }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto"><span style="font-size:{{ L.meta }};font-weight:500;color:#556A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.catLabel }}</span><span style="flex:none;font-size:{{ L.meta }};font-weight:600;color:#2F4636">{{ item.cond }}</span></div></sc-if><sc-if value="{{ authed }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                  <span style="flex:none;width:{{ L.av }};height:{{ L.av }};border-radius:50%;background-image:url({{ item.avatar }});background-size:cover"></span>
+                  <span style="font-size:{{ L.meta }};font-weight:500;color:#2F4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.owner }}</span>
+                </div>
+                <span style="flex:none;display:flex;align-items:center;gap:6px;font-size:{{ L.meta }};font-weight:600;color:#2F4636"><span style="width:4px;height:4px;border-radius:50%;background:#2F4636"></span>{{ item.building }}</span>
+              </div></sc-if>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+  <div style="max-width:1440px;margin:0 auto;padding:0 {{ footX }} 24px;box-sizing:border-box"><dc-import name="Site Footer" hint-size="100%,300px"></dc-import></div>
+
+  <sc-if value="{{ L.mobile }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:0;right:0;bottom:0;z-index:30;background:#FAFBF8;border-top:1px solid rgba(47,70,54,.08);box-shadow:0 -10px 30px -16px rgba(47,70,54,.25);padding:12px 16px calc(14px + env(safe-area-inset-bottom))">
+      <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-size:13px;font-weight:600;color:{{ cta.miniFg }}">{{ cta.mini }}</div>
+        <button onClick="{{ ctaMobile }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;border:none;border-radius:999px;background:{{ cta.bg }};color:{{ cta.fg }};font-size:16.5px;font-weight:700;cursor:pointer;box-shadow:{{ cta.sh }}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z"></path></svg>{{ cta.mobileLabel }}</button>
+      </sc-if>
+      <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+        <a href="Borrowing.dc.html" onClick="{{ guard.borrowing }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;border-radius:999px;background:#FFF4CC;color:#8A6100;font-size:16px;font-weight:700">Request sent · View in Borrowing</a>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;z-index:50;background:rgba(31,46,36,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:{{ L.modalAlign }};justify-content:center;padding:{{ L.modalPad }}">
+      <div onClick="{{ stop }}" role="dialog" aria-modal="true" style="width:100%;max-width:460px;max-height:calc(100vh - 24px);overflow:auto;box-sizing:border-box;background:#FAFBF8;border-radius:24px;padding:26px;box-shadow:0 30px 80px -20px rgba(31,46,36,.45)">
+        <sc-if value="{{ modal.request }}" hint-placeholder-val="{{ false }}">
+          <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-0.01em;color:#2F4636">Confirm your request</h3>
+          <div style="display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:center;margin-top:18px;padding:12px;border-radius:16px;background:#FFFFFF;border:1px solid rgba(47,70,54,.08)">
+            <span style="width:84px;aspect-ratio:4/3;border-radius:10px;background-image:url(img/gimbal.jpg);background-size:cover;background-position:center"></span>
+            <div style="min-width:0">
+              <div style="font-size:16px;font-weight:700;color:#2F4636">DJI Osmo Mobile</div>
+              <div style="margin-top:3px;font-size:14px;color:#556A5B">From Ruben G. · Building B</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px 16px;border-radius:16px;background:#F3ECFA">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7040A0" stroke-width="1.7" stroke-linecap="round" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+            <div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700;color:#2F4636">{{ modal.range }}</div></div>
+            <span style="flex:none;padding:6px 12px;border-radius:999px;background:#FFFFFF;color:#5A2D8C;font-size:13.5px;font-weight:700">{{ modal.days }}</span>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;margin-top:16px;font-size:14.5px;font-weight:700;color:#2F4636">Message to Ruben <span style="font-weight:500;color:#556A5B;font-size:13.5px;margin-top:-6px">Optional</span>
+            <textarea value="{{ note }}" onChange="{{ onNote }}" maxlength="200" rows="3" placeholder="e.g. Hi Ruben, I'd like to use it for a weekend trip." style="box-sizing:border-box;width:100%;resize:none;padding:12px 14px;border-radius:12px;border:1px solid rgba(47,70,54,.18);background:#FFFFFF;color:#2F4636;font-size:15px;line-height:1.45;outline:none" style-focus="border-color:#7040A0;box-shadow:0 0 0 4px rgba(112,64,160,.12)"></textarea>
+          </label>
+          <p style="margin:14px 0 0;font-size:13.5px;line-height:1.5;color:#556A5B;text-wrap:pretty">Ruben will review your request. Once approved you'll get the exact pickup address, and the loan starts when you confirm you've collected the item.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:22px">
+            <button onClick="{{ closeModal }}" style="flex:1 1 130px;min-height:50px;border-radius:999px;border:1.5px solid rgba(47,70,54,.2);background:#FAFBF8;color:#2F4636;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F0F4EC">Back</button>
+            <button onClick="{{ sendRequest }}" style="flex:1 1 180px;min-height:50px;border-radius:999px;border:none;background:#7040A0;color:#FFFFFF;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -6px rgba(112,64,160,.45)" style-hover="background:#5F3290">Send request</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ modal.owner }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:16px">
+            <img src="img/av-ruben.jpg" alt="Ruben Garcia" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #FFFFFF;box-shadow:0 4px 14px -6px rgba(47,70,54,.35)">
+            <div style="min-width:0">
+              <h3 style="margin:0;font-size:22px;font-weight:800;color:#2F4636">Ruben Garcia</h3>
+              <div style="margin-top:4px;font-size:14.5px;color:#556A5B">Building B · Gent</div>
+              <div style="margin-top:2px;font-size:14.5px;color:#556A5B">Member since Aug 2025</div>
+            </div>
+          </div>
+          <h4 style="margin:22px 0 10px;font-size:15px;font-weight:800;color:#2F4636">Items shared by Ruben</h4>
+          <div style="display:flex;flex-direction:column;border:1px solid rgba(47,70,54,.08);border-radius:14px;overflow:hidden;background:#FFFFFF">
+            <a href="Product Details.dc.html" style="display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;color:#2F4636"><span style="width:64px;aspect-ratio:4/3;border-radius:8px;background-image:url(img/gimbal.jpg);background-size:cover;background-position:center"></span><span style="font-size:15px;font-weight:700">DJI Osmo Mobile</span><span style="font-size:12px;font-weight:700;color:#1F5A2C;background:#E1F0DA;padding:4px 10px;border-radius:999px">Available</span></a>
+            <a href="Explore.dc.html" style="display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-top:1px solid rgba(47,70,54,.08);color:#2F4636"><span style="width:64px;aspect-ratio:4/3;border-radius:8px;background-image:url(img/tripod.jpg);background-size:cover;background-position:center"></span><span style="font-size:15px;font-weight:700">Camera Tripod</span><span style="font-size:12px;font-weight:700;color:#1F5A2C;background:#E1F0DA;padding:4px 10px;border-radius:999px">Available</span></a>
+          </div>
+          <button onClick="{{ closeModal }}" style="width:100%;margin-top:20px;min-height:50px;border-radius:999px;border:1.5px solid rgba(47,70,54,.2);background:#FAFBF8;color:#2F4636;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#F0F4EC">Close</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:{{ L.toastBottom }};transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);box-sizing:border-box;padding:14px 20px;border-radius:16px;background:#2F4636;color:#FAFBF8;font-size:14.5px;font-weight:600;box-shadow:0 16px 40px -12px rgba(31,46,36,.5)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B9E3A8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>{{ toast }}
+    </div>
+  </sc-if>
+  <dc-import name="Auth Modal" open="{{ authOpen }}" mode="{{ authMode }}" on-close="{{ authClose }}" on-success="{{ authSuccess }}" hint-size="0px,0px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TODAY = new Date(2026, 10, 26);
+const MAX_DAYS = 7;
+const BOOKED = [['2026-11-28','2026-11-30'], ['2026-12-08','2026-12-10'], ['2026-12-18','2026-12-21'], ['2027-01-04','2027-01-06']];
+const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const key = d => d.getFullYear()*10000 + d.getMonth()*100 + d.getDate();
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const diff = (a, b) => Math.round((b - a) / 864e5);
+const fmt = d => `${MS[d.getMonth()]} ${d.getDate()}`;
+const BOOKED_SET = new Set(); BOOKED.forEach(([a,b]) => { for (let d = pd(a); d <= pd(b); d = addDays(d,1)) BOOKED_SET.add(key(d)); });
+const isBooked = d => BOOKED_SET.has(key(d));
+const GALLERY = [
+  { src:'img/gimbal.jpg', label:'Main photo' },
+  { slotId:'osmo-photo-2', slotLabel:'Drop photo · folded with mini tripod', short:'Photo 2', label:'Photo 2' },
+  { slotId:'osmo-photo-3', slotLabel:'Drop photo · in use with a phone', short:'Photo 3', label:'Photo 3' },
+];
+const SIMILAR = [
+  { name:'Camera Tripod', desc:'Adjustable tripod up to 160 cm, compatible with most cameras and phones.', av:'ruben', owner:'Ruben G.', building:'Building B', img:'tripod', ok:true },
+  { name:'Drone', desc:'4K drone with stabilized camera. Perfect for travel and creative projects.', av:'sara', owner:'Sara T.', building:'Building C', img:'drone', ok:false },
+  { name:'Softbox Kit', desc:'Photography lighting kit with softbox and adjustable stand for portraits.', av:'trevis', owner:'Trevis K.', building:'Building A', img:'softbox', ok:true },
+  { name:'Projector', desc:'Full HD portable projector, perfect for movie nights and presentations in the courtyard.', av:'marc', owner:'Marc S.', building:'Building A', img:'projector', ok:true },
+];
+const ICON = (p, c) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`);
+
+const AUTH_GATE = false;
+class Component extends DCLogic {
+  _authed() { try { return localStorage.getItem('syt-auth') === 'in'; } catch (_) { return false; } }
+  openAuth(intent, mode) { this.setState({ authOpen:true, authMode: mode || 'signin', authIntent: intent || null }); }
+  renderVals() {
+    const authed = this._authed();
+    if (AUTH_GATE && !authed && !this._gated) { this._gated = true; setTimeout(() => this.openAuth(null, 'signin'), 0); }
+    const base = this._rv();
+    const guard = href => e => { if (this._authed()) return; e.preventDefault(); this.openAuth({ href }); };
+    const w = document.documentElement.clientWidth || window.innerWidth || 1440;
+    return { ...base, authed, guest: !authed, authOpen: !!this.state.authOpen, authMode: this.state.authMode || 'signin',
+      footX: w < 760 ? '14px' : w < 1100 ? '32px' : '56px',
+      guard: { borrowing: guard('Borrowing.dc.html'), lending: guard('Lending.dc.html'), share: guard('Share a Tool.dc.html'), profile: guard('My Profile.dc.html') },
+      openLogin: () => this.openAuth(null, 'signin'),
+      authClose: () => { this.setState({ authOpen:false, authIntent:null }); if (AUTH_GATE && !this._authed()) location.href = 'Explore.dc.html'; },
+      authSuccess: () => { try { localStorage.setItem('syt-auth', 'in'); } catch (_) {} const it = this.state.authIntent; this.setState({ authOpen:false, authIntent:null, authTick: Date.now() }); if (it && it.href) location.href = it.href; else if (it && it.run) setTimeout(it.run, 60); },
+    };
+  }
+
+  state = { w: (typeof window !== 'undefined' && window.innerWidth) || 1440, img:0, start:null, end:null, calOpen:false, view:{ y:2026, m:10 }, modal:null, sent:false, note:'', toast:null, hint:null };
+  datesRef = React.createRef();
+  ensureWatch() {
+    if (this._ro) return;
+    const read = () => { const w = document.documentElement.clientWidth || window.innerWidth; this.setState({ w }); };
+    this._ro = new ResizeObserver(read); this._ro.observe(document.documentElement);
+    window.addEventListener('resize', read); this._read = read; requestAnimationFrame(read);
+  }
+  componentDidMount() { this.ensureWatch(); }
+  componentWillUnmount() { this._ro && this._ro.disconnect(); window.removeEventListener('resize', this._read); this._ro = null; clearTimeout(this._t); }
+  flash(m) { clearTimeout(this._t); this.setState({ toast:m }); this._t = setTimeout(() => this.setState({ toast:null }), 3600); }
+
+  limitFor(start) {
+    let last = addDays(start, MAX_DAYS - 1);
+    for (let d = start; d <= last; d = addDays(d, 1)) if (isBooked(d)) return addDays(d, -1);
+    return last;
+  }
+  pick(d) {
+    const { start, end } = this.state;
+    if (!start || end || d < start) return this.setState({ start:d, end:null, hint:null });
+    if (key(d) === key(start)) return this.setState({ end:d, hint:null });
+    const lim = this.limitFor(start);
+    if (d > lim) return this.setState({ start:d, end:null, hint:null });
+    this.setState({ end:d, hint:null, calOpen: !(this.isMobile) ? true : false });
+  }
+  focusDates() {
+    const el = this.datesRef.current;
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior:'smooth' });
+    this.setState({ calOpen:true });
+  }
+  goBack() {
+    try {
+      const r = document.referrer;
+      if (r && new URL(r).origin === location.origin && history.length > 1) return history.back();
+    } catch (_) {}
+    location.href = 'Explore.dc.html';
+  }
+  month(y, m, mobile, idx, count) {
+    const first = new Date(y, m, 1);
+    const lead = (first.getDay() + 6) % 7;
+    const dim = new Date(y, m + 1, 0).getDate();
+    const { start, end } = this.state;
+    const lim = start && !end ? this.limitFor(start) : null;
+    const cells = [];
+    for (let i = 0; i < lead; i++) cells.push({ label:'', vis:'hidden', disabled:true, band:'transparent', bandRadius:'0', bg:'transparent', fg:'#2F4636', fw:500, deco:'none', cursor:'default', border:'none', aria:'' });
+    for (let dd = 1; dd <= dim; dd++) {
+      const d = new Date(y, m, dd);
+      const past = d < TODAY, booked = isBooked(d);
+      const isS = start && key(d) === key(start), isE = end && key(d) === key(end);
+      const inR = start && end && d > start && d < end;
+      const outOfReach = lim && (d > lim) ;
+      const blocked = past || booked;
+      const muted = blocked || outOfReach;
+      const sel = isS || isE;
+      let band = 'transparent', bandRadius = '0';
+      if (start && end && key(start) !== key(end)) {
+        if (inR) band = '#EFE5F8';
+        if (isS) { band = 'linear-gradient(90deg,transparent 50%,#EFE5F8 50%)'; }
+        if (isE) { band = 'linear-gradient(90deg,#EFE5F8 50%,transparent 50%)'; }
+      }
+      cells.push({
+        label: dd, vis:'visible', disabled: blocked, band, bandRadius,
+        bg: sel ? '#7040A0' : booked ? '#F1ECEC' : 'transparent',
+        fg: sel ? '#FFFFFF' : booked ? '#B9A9A9' : past ? '#C3CCC5' : outOfReach ? '#A9B5AC' : '#2F4636',
+        fw: sel ? 800 : key(d) === key(TODAY) ? 800 : 500,
+        deco: booked ? 'line-through' : 'none',
+        border: key(d) === key(TODAY) && !sel ? '1.5px solid #B796D8' : 'none',
+        cursor: blocked ? 'not-allowed' : 'pointer',
+        aria: `${fmt(d)}${booked ? ', unavailable' : past ? ', past' : ''}`,
+        pick: () => this.pick(d),
+      });
+    }
+    const v = this.state.view;
+    const atMin = v.y === TODAY.getFullYear() && v.m === TODAY.getMonth();
+    const shift = n => () => { const t = new Date(v.y, v.m + n, 1); this.setState({ view:{ y:t.getFullYear(), m:t.getMonth() } }); };
+    return { title:`${MON[m]} ${y}`, cells,
+      prev: shift(-1), next: shift(1), prevDisabled: atMin, prevOp: atMin ? 0.3 : 1,
+      prevDisplay: idx === 0 ? 'flex' : 'none', nextDisplay: idx === count - 1 ? 'flex' : 'none' };
+  }
+
+  _rv() {
+    this.ensureWatch();
+    const s = this.state;
+    const w = document.documentElement.clientWidth || window.innerWidth || s.w || 1440;
+    const mobile = w < 760, split = w >= 960;
+    this.isMobile = mobile;
+    const simCols = w >= 1100 ? 4 : 2;
+    const twoMonths = !mobile && (split ? w >= 1180 : true);
+    const L = {
+      desktop: !mobile, mobile,
+      pageBottom: mobile ? 'calc(130px + env(safe-area-inset-bottom))' : '72px',
+      navPad: w < 1100 ? '3px 12px 0' : '3px 20px 0', hdrPad: w < 1100 ? '0 32px' : '0 56px',
+      mainPad: mobile ? '14px 14px 0' : (w < 1100 ? '28px 32px 0' : '28px 56px 0'),
+      cols: split ? 'minmax(0,1.5fr) minmax(340px,1fr)' : 'minmax(0,1fr)', colGap: '28px', gridTop: mobile ? '0' : '26px',
+      asidePos: split ? 'sticky' : 'static', blockGap: mobile ? '16px' : '22px',
+      heroRatio: mobile ? '4 / 3' : '16 / 9.6', heroRadius: mobile ? '18px' : '22px', thumbW: mobile ? '76px' : '108px',
+      cardPad: mobile ? '18px 16px' : '26px 28px', h3: mobile ? '19px' : '21px', h4: mobile ? '16px' : '17px', body: mobile ? '15px' : '16px',
+      divider: mobile ? '18px 0' : '22px 0', condCols: mobile ? '1fr' : 'minmax(0,0.8fr) minmax(0,1.6fr)', condGap: mobile ? '18px' : '28px',
+      fieldCols: '20px minmax(0,1fr) 12px minmax(0,1fr) 18px',
+      calPad: mobile ? '12px 8px' : '18px', calCols: twoMonths ? 'repeat(2,minmax(0,1fr))' : 'minmax(0,1fr)', dayW: mobile ? '40px' : '38px',
+      simTop: mobile ? '28px' : '48px', simH: mobile ? '22px' : '28px', simHeadGap: mobile ? '14px' : '20px',
+      simCols: `repeat(${simCols},minmax(0,1fr))`, simGap: mobile ? '12px' : '24px',
+      radius: mobile ? '16px' : '18px', bodyPad: mobile ? '12px' : '18px 20px', title: mobile ? '15.5px' : '19px', desc: mobile ? '13px' : '14.5px', meta: mobile ? '12.5px' : '14.5px',
+      cardDivider: mobile ? '10px 0' : '14px 0', av: mobile ? '24px' : '28px',
+      badgeInset: mobile ? '10px' : '12px', badgeLeft: mobile ? '10px' : 'auto', badgeRight: mobile ? 'auto' : '12px', badgeH: mobile ? '26px' : '30px', badgeFs: mobile ? '12px' : '13.5px',
+      modalAlign: mobile ? 'flex-end' : 'center', modalPad: mobile ? '12px' : '24px',
+      toastBottom: mobile ? 'calc(140px + env(safe-area-inset-bottom))' : '32px',
+    };
+    const gi = GALLERY[s.img];
+    const g = { isImg: !!gi.src, isSlot: !!gi.slotId, src: gi.src, slotId: gi.slotId, slotLabel: gi.slotLabel, counter:`${s.img + 1} / ${GALLERY.length}` };
+    const thumbs = GALLERY.map((x, i) => ({ ...x, isImg: !!x.src, isSlot: !!x.slotId, bd: i === s.img ? '#7040A0' : 'transparent', op: i === s.img ? 1 : 0.72, pick: () => this.setState({ img:i }) }));
+
+    const count = twoMonths ? 2 : 1;
+    const months = [];
+    for (let i = 0; i < count; i++) { const t = new Date(s.view.y, s.view.m + i, 1); months.push(this.month(t.getFullYear(), t.getMonth(), mobile, i, count)); }
+
+    const valid = !!(s.start && s.end);
+    const days = valid ? diff(s.start, s.end) + 1 : 0;
+    const rangeText = valid ? (days === 1 ? fmt(s.start) : `${fmt(s.start)} – ${fmt(s.end)}`) : '';
+    const field = {
+      start: s.start ? fmt(s.start) : 'Select start date', end: s.end ? fmt(s.end) : 'Select end date',
+      sc: s.start ? '#2F4636' : '#8A988E', sw: s.start ? 700 : 500, ec: s.end ? '#2F4636' : '#8A988E', ew: s.end ? 700 : 500,
+      bd: s.calOpen ? '#7040A0' : valid ? 'rgba(112,64,160,.45)' : 'rgba(47,70,54,.16)', sh: s.calOpen ? '0 0 0 4px rgba(112,64,160,.12)' : 'none',
+    };
+    let status;
+    if (valid) status = { fg:'#2C6B34', icon: ICON('<path d="M5 12.5l4.5 4.5L19 7.5"/>', '#2C6B34'), text:`Available · ${rangeText} (${days} day${days === 1 ? '' : 's'})` };
+    else if (s.start) { const lim = this.limitFor(s.start); const n = diff(s.start, lim) + 1;
+      status = { fg:'#7040A0', icon: ICON('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', '#7040A0'), text: n < MAX_DAYS ? `Now pick an end date — available until ${fmt(lim)} (booked after that).` : `Now pick an end date — up to ${MAX_DAYS} days, until ${fmt(lim)}.` }; }
+    else status = { fg:'#556A5B', icon: ICON('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/>', '#556A5B'), text:`Crossed-out dates are already booked. Loans can last up to ${MAX_DAYS} days.` };
+
+    const cta = valid
+      ? { disabled:false, bg:'#7040A0', fg:'#FFFFFF', cursor:'pointer', sh:'0 10px 24px -8px rgba(112,64,160,.5)', hint:`${rangeText} · ${days} day${days === 1 ? '' : 's'}`, mini:`${rangeText} · ${days} day${days === 1 ? '' : 's'}`, miniFg:'#2F4636', mobileLabel:'Request to borrow' }
+      : { disabled:true, bg:'#D9CDE6', fg:'#FFFFFF', cursor:'not-allowed', sh:'none', hint:'Select your dates to send a request.', mini:'Select your dates first', miniFg:'#556A5B', mobileLabel: s.start ? 'Select an end date' : 'Choose dates to request' };
+
+    const similar = SIMILAR.map(x => ({ ...x, catLabel:'Electronics', cond: x.ok ? 'Like New' : 'Good', img:`img/${x.img}.jpg`, avatar:`img/av-${x.av}.jpg`, status: x.ok ? 'Available' : 'Borrowed',
+      badgeBg: x.ok ? 'rgba(250,251,248,.94)' : 'rgba(255,246,214,.96)', badgeFg: x.ok ? '#1F5A2C' : '#7A5800', dot: x.ok ? '#2EA44F' : '#EDB800' }));
+
+    let modal = null;
+    if (s.modal === 'request' && valid) modal = { request:true, range: rangeText + (s.start.getFullYear() !== TODAY.getFullYear() || s.end.getFullYear() !== TODAY.getFullYear() ? `, ${s.end.getFullYear()}` : ''), days:`${days} day${days === 1 ? '' : 's'}` };
+    if (s.modal === 'owner') modal = { owner:true };
+
+    const steps = [
+      'Send a borrowing request to the owner.',
+      'Wait for the owner to approve it.',
+      'Arrange pickup with the owner.',
+      'Confirm receipt when you collect the item.',
+    ].map((text, i) => ({ n: i + 1, text }));
+
+    return {
+      L, g, thumbs, months, weekdays:['Mo','Tu','We','Th','Fr','Sa','Su'], field, status, cta, similar, modal, steps,
+      calOpen: s.calOpen, calRot: s.calOpen ? '180deg' : '0deg', hasAny: !!s.start, datesRef: this.datesRef,
+      notSent: !s.sent, sent: s.sent, sentText: valid ? `${rangeText} · waiting for Ruben.` : 'Waiting for Ruben.',
+      note: s.note, toast: s.toast,
+      backLabel: 'Back to Explore',
+      prev: () => this.setState(st => ({ img: (st.img - 1 + GALLERY.length) % GALLERY.length })),
+      next: () => this.setState(st => ({ img: (st.img + 1) % GALLERY.length })),
+      toggleCal: () => this.setState(st => ({ calOpen: !st.calOpen })),
+      clearDates: () => this.setState({ start:null, end:null }),
+      focusDates: () => this.focusDates(),
+      openRequest: () => valid && (this._authed() ? this.setState({ modal:'request' }) : this.openAuth({ run: () => this.setState({ modal:'request' }) })),
+      ctaMobile: () => !valid ? this.focusDates() : (this._authed() ? this.setState({ modal:'request' }) : this.openAuth({ run: () => this.setState({ modal:'request' }) })),
+      openOwner: () => { window.location.href = 'User Profile.dc.html?u=ruben'; },
+      closeModal: () => this.setState({ modal:null }),
+      stop: e => e.stopPropagation(),
+      onNote: e => this.setState({ note: e.target.value }),
+      sendRequest: () => { this.setState({ modal:null, sent:true, calOpen:false }); this.flash('Request sent · Ruben has been notified.'); },
+      goBack: () => this.goBack(),
+      pickupPlace: this._authed() ? 'Building B · Gent' : 'Gent · approximate area',
+    };
+  }
+}
+</script>
+</body>
+</html>

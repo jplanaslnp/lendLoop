@@ -3,12 +3,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { ROUTES, type NavKey } from "@/config/navigation";
-import { useMockSession } from "@/features/auth/MockSessionProvider";
+import { useAuthUi } from "@/features/auth/AuthProvider";
+import { UserAvatar } from "@/features/auth/UserAvatar";
+import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { cn } from "@/lib/cn";
-import { MOCK_CURRENT_USER } from "@/mocks/people";
 
 import { Logo } from "./Logo";
 
@@ -35,7 +35,8 @@ const DESKTOP_TABS: {
 
 /** Desktop (≥760px) sticky header with centred tab navigation. */
 export function DesktopHeader({ active }: { active?: NavKey }) {
-  const { isSignedIn, guardLink, openAuth } = useMockSession();
+  const { isLoaded, isSignedIn, guardLink, openAuth } = useAuthUi();
+  const user = useCurrentUser();
   return (
     <header className="sticky top-0 z-20 hidden border-b border-solid border-[rgba(47,70,54,.07)] bg-[rgba(246,249,243,.86)] backdrop-blur-[14px] backdrop-saturate-[1.4] md:block">
       <div className="mx-auto box-border grid h-[68px] max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-8 xl:px-14">
@@ -84,9 +85,8 @@ export function DesktopHeader({ active }: { active?: NavKey }) {
               aria-label="My profile"
               aria-current={active === "profile" ? "page" : undefined}
             >
-              <Avatar
-                src={MOCK_CURRENT_USER.avatar}
-                alt=""
+              <UserAvatar
+                user={user}
                 size={40}
                 className={cn(
                   "box-content border-2 border-solid shadow-avatar",
@@ -99,7 +99,13 @@ export function DesktopHeader({ active }: { active?: NavKey }) {
             <button
               type="button"
               onClick={() => openAuth()}
-              className="flex h-11 flex-none items-center gap-2 rounded-full border-[1.5px] border-solid border-primary bg-surface px-5 text-[15px] font-bold whitespace-nowrap text-primary hover:bg-lavender-soft"
+              // Hidden (space kept) until Clerk knows whether you're signed in.
+              aria-hidden={!isLoaded || undefined}
+              tabIndex={isLoaded ? undefined : -1}
+              className={cn(
+                "flex h-11 flex-none items-center gap-2 rounded-full border-[1.5px] border-solid border-primary bg-surface px-5 text-[15px] font-bold whitespace-nowrap text-primary hover:bg-lavender-soft",
+                !isLoaded && "invisible",
+              )}
             >
               <Icon name="user" size={18} />
               Login / Register
@@ -138,7 +144,8 @@ export function MobileBrandHeader({
   showAccount?: boolean;
   className?: string;
 }) {
-  const { isSignedIn, openAuth } = useMockSession();
+  const { isLoaded, isSignedIn, openAuth } = useAuthUi();
+  const user = useCurrentUser();
   return (
     <header
       className={cn(
@@ -153,9 +160,8 @@ export function MobileBrandHeader({
           {showAccount ? (
             isSignedIn ? (
               <Link href={ROUTES.profile} aria-label="My profile">
-                <Avatar
-                  src={MOCK_CURRENT_USER.avatar}
-                  alt=""
+                <UserAvatar
+                  user={user}
                   size={36}
                   className="box-content border-2 border-solid border-surface shadow-avatar"
                 />
@@ -164,7 +170,12 @@ export function MobileBrandHeader({
               <button
                 type="button"
                 onClick={() => openAuth()}
-                className="h-10 rounded-full border-[1.5px] border-solid border-primary bg-surface px-4 text-sm font-bold whitespace-nowrap text-primary"
+                aria-hidden={!isLoaded || undefined}
+                tabIndex={isLoaded ? undefined : -1}
+                className={cn(
+                  "h-10 rounded-full border-[1.5px] border-solid border-primary bg-surface px-4 text-sm font-bold whitespace-nowrap text-primary",
+                  !isLoaded && "invisible",
+                )}
               >
                 Log in
               </button>

@@ -1,6 +1,9 @@
-import { Avatar } from "@/components/ui/Avatar";
+"use client";
+
 import { Icon } from "@/components/ui/Icon";
 import { AvailabilityOverlayBadge } from "@/components/ui/StatusBadge";
+import { UserAvatar } from "@/features/auth/UserAvatar";
+import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { cn } from "@/lib/cn";
 import { MOCK_CURRENT_USER } from "@/mocks/people";
 
@@ -49,6 +52,7 @@ export function ListingPreviewCard({
   mainPhoto,
   variant,
 }: PreviewProps) {
+  const user = useCurrentUser();
   const s = SIZES[variant];
   const hasName = name.trim().length > 0;
   const hasDesc = description.trim().length > 0;
@@ -105,14 +109,14 @@ export function ListingPreviewCard({
         <div className={cn("h-px bg-[rgba(47,70,54,.1)]", s.divider)} />
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <Avatar src={MOCK_CURRENT_USER.avatar} alt="" size={s.avatar} />
+            <UserAvatar user={user} size={s.avatar} />
             <span
               className={cn(
                 "font-medium whitespace-nowrap text-forest",
                 s.meta,
               )}
             >
-              {MOCK_CURRENT_USER.shortName}
+              {user?.shortName}
             </span>
           </div>
           <span

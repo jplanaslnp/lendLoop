@@ -17,6 +17,8 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
   "dependencies": {
+    "@clerk/nextjs": "7.10.10",
+    "convex": "1.51.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1"

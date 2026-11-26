@@ -59,3 +59,14 @@ Phase 2 reproduces the approved design as-is. None of the pending decisions abov
 - [ ] Listings without photos use a neutral photo placeholder; the design used an editor-only "Drop photo" slot. Depends on the photo decision above.
 - [ ] The DJI Osmo Mobile product page (the design's detailed example) is reachable from its owner's profile but is not in the design's Explore list. Confirm whether every listing should expose Brand/Model/Includes.
 - [ ] Sign-in is simulated in memory for Phase 2 only (no persistence, no credentials stored). Phase 3 replaces it with Clerk and must decide how the custom modal maps to Clerk flows.
+
+## Notes from Phase 3 (Clerk authentication)
+Decisions taken while wiring the approved modal to Clerk (`@clerk/nextjs` 7, custom-flow API). Items marked [ ] still need a product decision.
+- Sign-in UI is the LendLoop modal; Clerk's prebuilt pages are not used. Clerk's own redirects (`signInUrl`) and the proxy gate both open the modal on `/explore?auth=sign-in&redirect_url=…`. Return paths are accepted only as same-site relative paths (open-redirect protection).
+- Account pages (`/borrowing`, `/lending`, `/share`, `/profile`, `/users/*`) are gated in `proxy.ts`. This is page access only; private data must still be authorised in Convex (Phase 4+). Explore and product pages stay public.
+- The modal gained steps the static design did not show, built from its existing fields and styles: "Check your email" (email code for sign-up verification and Clerk's new-device check) and "Reset your password" (code + new password). Clerk's bot-protection challenge appears in Clerk's own small dialog when Clerk asks for it.
+- An intended action that leaves the page (Google sign-in) is carried in the URL (e.g. `/tools/<id>?intent=request&from=…&to=…`) and re-validated on return; nothing is kept in localStorage.
+- My Profile shows the Clerk name, email, image and join month. "Edit profile" saves the name to Clerk; the building field remains local mock data until the Convex profile exists.
+- [ ] Clerk's password minimum on the development instance is 15 characters, while the design's copy and client check say "8+ characters". Either lower the Clerk setting to 8 or change the copy; until then Clerk's message is shown under the field.
+- [ ] The sign-up address is validated as designed but not sent to Clerk or stored anywhere (not appropriate for Clerk metadata). Decide in Phase 4 whether it moves to the Convex profile or to a post-sign-up step.
+- [ ] The Terms/Privacy checkbox is required by the form, but Clerk's legal-consent setting is off, so acceptance is not recorded. Enable it in Clerk (and pass `legalAccepted`) or record consent in Convex.

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DesktopHeader,
@@ -20,14 +21,16 @@ import { AvailabilityPill } from "@/components/ui/StatusBadge";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { getCategory, getConditionLabel } from "@/config/categories";
 import { ROUTES } from "@/config/navigation";
-import { useMockSession } from "@/features/auth/MockSessionProvider";
+import { useAuthUi } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/cn";
 import { formatShort, pluralDays } from "@/lib/dates";
 import {
   buildBookedSet,
   pickDate,
   rangeLength,
+  restoreRange,
   selectableLimit,
+  toIsoDate,
   type DateRange,
 } from "@/lib/dateRange";
 import { useGoBack } from "@/lib/useGoBack";
@@ -44,6 +47,9 @@ import { ProductGallery } from "./ProductGallery";
 const PANEL =
   "rounded-panel border border-solid border-[rgba(47,70,54,.07)] bg-surface";
 
+/** Query key that resumes an action after a full-page sign-in. */
+const RESUME_INTENT = "intent";
+
 const STEPS = [
   "Send a borrowing request to the owner.",
   "Wait for the owner to approve it.",
@@ -53,7 +59,9 @@ const STEPS = [
 
 /** Product details with date selection and a mock borrow request flow. */
 export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
-  const { isSignedIn, requireAuth, openAuth, guardLink } = useMockSession();
+  const { isLoaded, isSignedIn, requireAuth, openAuth, guardLink } =
+    useAuthUi();
+  const router = useRouter();
   const goBack = useGoBack();
   const toast = useToast(3600);
   const booked = useMemo(() => buildBookedSet(MOCK_BOOKED_RANGES), []);
@@ -140,9 +148,47 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
   };
 
   const openRequest = () => {
-    if (!valid) return;
-    requireAuth(() => setRequestOpen(true));
+    if (!start || !end) return;
+    // If sign-in leaves the page (Google), this URL brings the visitor back
+    // to this tool with the same dates and the request form open.
+    const resume = new URLSearchParams({
+      [RESUME_INTENT]: "request",
+      from: toIsoDate(start),
+      to: toIsoDate(end),
+    });
+    requireAuth(
+      () => setRequestOpen(true),
+      `${ROUTES.tool(tool.id)}?${resume.toString()}`,
+    );
   };
+
+  // Resume "Request to borrow" after a sign-in that left the page. Runs once
+  // Clerk has loaded, reading the URL written by openRequest above.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || resumed.current) return;
+    const timer = window.setTimeout(() => {
+      resumed.current = true;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get(RESUME_INTENT) !== "request") return;
+      router.replace(ROUTES.tool(tool.id), { scroll: false });
+      const restored = restoreRange(
+        params.get("from"),
+        params.get("to"),
+        MOCK_TODAY,
+        MAX_LOAN_DAYS,
+        booked,
+      );
+      if (!restored) return;
+      setRange(restored);
+      setView({
+        year: restored.start.getFullYear(),
+        month: restored.start.getMonth(),
+      });
+      if (isSignedIn) setRequestOpen(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isLoaded, isSignedIn, booked, router, tool.id]);
 
   const sendRequest = () => {
     setRequestOpen(false);

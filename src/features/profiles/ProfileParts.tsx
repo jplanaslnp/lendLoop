@@ -52,13 +52,13 @@ export function ProfileMeta({
   icon,
   children,
 }: {
-  icon: "building" | "calendar";
+  icon: "building" | "calendar" | "mail";
   children: ReactNode;
 }) {
   return (
     <span className="flex items-center gap-2.5 text-sm text-forest md:text-base">
       <Icon name={icon} size={20} strokeWidth={1.6} className="flex-none" />
-      <span>{children}</span>
+      <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
     </span>
   );
 }

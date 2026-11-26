@@ -7,7 +7,7 @@ import { AvailabilityOverlayBadge } from "@/components/ui/StatusBadge";
 import { ToolImage } from "@/components/ui/ToolImage";
 import { getCategory, getConditionLabel } from "@/config/categories";
 import { ROUTES } from "@/config/navigation";
-import { useMockSession } from "@/features/auth/MockSessionProvider";
+import { useAuthUi } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/cn";
 import { avatarSrc, PEOPLE } from "@/mocks/people";
 import type { MockTool } from "@/mocks/tools";
@@ -46,7 +46,7 @@ export function ToolCard({
   size?: keyof typeof SIZES;
   priority?: boolean;
 }) {
-  const { isSignedIn } = useMockSession();
+  const { isSignedIn } = useAuthUi();
   const s = SIZES[size];
   const owner = PEOPLE[tool.ownerId];
 

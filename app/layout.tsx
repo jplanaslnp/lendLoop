@@ -1,8 +1,11 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 
 import { siteConfig } from "@/config/site";
-import { MockSessionProvider } from "@/features/auth/MockSessionProvider";
+import { ROUTES } from "@/config/navigation";
+import { AuthProvider } from "@/features/auth/AuthProvider";
+import { AUTH_QUERY, SIGN_IN_GATE_VALUE } from "@/features/auth/returnTo";
 
 import "./globals.css";
 
@@ -26,11 +29,21 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/** Clerk's own redirects open the LendLoop modal instead of a Clerk page. */
+const SIGN_IN_URL = `${ROUTES.explore}?${AUTH_QUERY.open}=${SIGN_IN_GATE_VALUE}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${plusJakartaSans.variable} antialiased`}>
       <body className="min-h-screen bg-sage font-sans text-forest">
-        <MockSessionProvider>{children}</MockSessionProvider>
+        {/* Keys come from NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY. */}
+        <ClerkProvider
+          signInUrl={SIGN_IN_URL}
+          signUpUrl={SIGN_IN_URL}
+          afterSignOutUrl={ROUTES.explore}
+        >
+          <AuthProvider>{children}</AuthProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

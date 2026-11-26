@@ -2,25 +2,38 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { useMockSession } from "./MockSessionProvider";
+import { useAuthUi } from "./AuthProvider";
 
 /**
- * Phase 2 UI gate for account pages (Borrowing, Lending, Share, profiles):
- * signed-out visitors get the sign-in modal and no page content, matching the
- * design's AUTH_GATE behaviour. Closing the modal returns to Explore.
+ * Client-side companion to the proxy.ts gate for account pages (Borrowing,
+ * Lending, Share, profiles). The proxy already redirects signed-out requests;
+ * this covers a session that ends while the page is open (e.g. sign-out in
+ * another tab): content is hidden and the sign-in modal opens, and closing
+ * it returns to Explore — the design's AUTH_GATE behaviour.
  *
- * This is presentation only — real protection is enforced by Clerk/Convex in
- * Phases 3–4.
+ * Presentation only: private data is authorised server-side (Convex, Phase 4+).
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { isSignedIn, openAuth } = useMockSession();
-  const checked = useRef(false);
+  const { isLoaded, isSignedIn, isSigningOut, openAuth } = useAuthUi();
+  const opened = useRef(false);
+  const signedOut = isLoaded && !isSignedIn && !isSigningOut;
 
   useEffect(() => {
-    if (checked.current) return;
-    checked.current = true;
-    if (!isSignedIn) openAuth({ gate: true });
-  }, [isSignedIn, openAuth]);
+    if (!signedOut) {
+      opened.current = false;
+      return;
+    }
+    if (opened.current) return;
+    opened.current = true;
+    openAuth({
+      gate: true,
+      intent: {
+        kind: "navigate",
+        href: `${window.location.pathname}${window.location.search}`,
+      },
+    });
+  }, [signedOut, openAuth]);
 
-  return isSignedIn ? <>{children}</> : null;
+  // While Clerk loads, trust the proxy check that let this request through.
+  return signedOut ? null : <>{children}</>;
 }

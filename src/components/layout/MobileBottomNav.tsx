@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ROUTES, type NavKey } from "@/config/navigation";
-import { useMockSession } from "@/features/auth/MockSessionProvider";
+import { useAuthUi } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/cn";
 
 const ITEMS: {
@@ -55,7 +55,7 @@ const ITEMS: {
 
 /** Fixed mobile (<760px) tab bar for authenticated app pages. */
 export function MobileBottomNav({ active }: { active?: NavKey }) {
-  const { guardLink } = useMockSession();
+  const { guardLink } = useAuthUi();
   return (
     <nav
       aria-label="Main"

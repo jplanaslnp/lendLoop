@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { useState, type MouseEvent } from "react";
 
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -9,15 +9,16 @@ import {
   DesktopHeader,
   MobileBrandHeader,
 } from "@/components/layout/SiteHeader";
-import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ROUTES } from "@/config/navigation";
-import { useMockSession } from "@/features/auth/MockSessionProvider";
+import { useAuthUi } from "@/features/auth/AuthProvider";
 import { RequireAuth } from "@/features/auth/RequireAuth";
+import { UserAvatar } from "@/features/auth/UserAvatar";
+import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { cn } from "@/lib/cn";
 import { MOCK_CURRENT_USER } from "@/mocks/people";
 import {
@@ -55,17 +56,20 @@ const INPUT =
 
 /** My Profile — account summary, my listings and loan histories (mock). */
 export function MyProfileScreen() {
-  const router = useRouter();
-  const { signOut } = useMockSession();
+  const { signOut } = useAuthUi();
+  const user = useCurrentUser();
+  const { user: clerkUser } = useUser();
   const toast = useToast(3200);
   const [items, setItems] = useState<readonly MyItem[]>(MY_ITEMS);
   const [menu, setMenu] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
-  const [profile, setProfile] = useState<{ name: string; building: string }>({
-    name: MOCK_CURRENT_USER.fullName,
-    building: MOCK_CURRENT_USER.buildingDetail,
-  });
-  const [draft, setDraft] = useState(profile);
+  // Building is mock data until the Convex profile exists (Phase 4).
+  const [building, setBuilding] = useState<string>(
+    MOCK_CURRENT_USER.buildingDetail,
+  );
+  const [draft, setDraft] = useState({ name: "", building });
+  const [saving, setSaving] = useState(false);
+  const name = user?.fullName ?? "";
 
   const toggleMenu = (id: string) => (event: MouseEvent) => {
     event.stopPropagation();
@@ -80,16 +84,29 @@ export function MyProfileScreen() {
       toast.show(`${modal.item.name} removed from your listings.`);
     } else if (modal.kind === "logout") {
       setModal(null);
-      router.push(ROUTES.explore);
-      signOut();
+      void signOut();
     } else {
-      if (!draft.name.trim()) return;
-      setProfile({
-        name: draft.name.trim(),
-        building: draft.building.trim() || profile.building,
-      });
+      void saveProfile();
+    }
+  };
+
+  /** Name is saved to the Clerk account; building stays local (mock). */
+  const saveProfile = async () => {
+    const nextName = draft.name.trim();
+    if (!nextName || saving) return;
+    setSaving(true);
+    try {
+      if (clerkUser && nextName !== name) {
+        const [firstName = "", ...rest] = nextName.split(/\s+/);
+        await clerkUser.update({ firstName, lastName: rest.join(" ") });
+      }
+      setBuilding(draft.building.trim() || building);
       setModal(null);
       toast.show("Profile updated.");
+    } catch {
+      toast.show("Couldn’t update your profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -200,29 +217,28 @@ export function MyProfileScreen() {
           >
             <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-7">
               <span className="box-content size-[84px] flex-none overflow-hidden rounded-full border-4 border-solid border-white shadow-[0_4px_18px_-6px_rgba(47,70,54,.3)] md:size-[124px]">
-                <Avatar
-                  src={MOCK_CURRENT_USER.avatar}
-                  alt={profile.name}
-                  size={124}
-                  fluid
-                  priority
-                />
+                <UserAvatar user={user} alt={name} size={124} fluid priority />
               </span>
               <div className="flex min-w-0 flex-col gap-1.5 md:gap-2">
                 <h2 className="mt-0 mb-1 text-[21px] leading-[1.1] font-extrabold tracking-tighter text-forest md:text-[30px]">
-                  {profile.name}
+                  {name}
                 </h2>
-                <ProfileMeta icon="building">{profile.building}</ProfileMeta>
-                <ProfileMeta icon="calendar">
-                  Member since {MOCK_CURRENT_USER.memberSince}
-                </ProfileMeta>
+                {user?.email ? (
+                  <ProfileMeta icon="mail">{user.email}</ProfileMeta>
+                ) : null}
+                <ProfileMeta icon="building">{building}</ProfileMeta>
+                {user?.memberSince ? (
+                  <ProfileMeta icon="calendar">
+                    Member since {user.memberSince}
+                  </ProfileMeta>
+                ) : null}
               </div>
             </div>
             <div className="flex w-full flex-none flex-row gap-3 bp900:w-[220px] bp900:flex-col">
               <button
                 type="button"
                 onClick={() => {
-                  setDraft(profile);
+                  setDraft({ name, building });
                   setModal({ kind: "edit" });
                 }}
                 className="flex min-h-[46px] flex-1 items-center justify-center gap-2.5 rounded-full border-[1.5px] border-solid border-primary bg-primary px-[26px] text-base font-bold whitespace-nowrap text-white hover:bg-lavender hover:text-primary-deep md:min-h-[50px] md:bg-surface md:text-primary"
@@ -440,6 +456,7 @@ export function MyProfileScreen() {
               <Button
                 variant={modal.kind === "remove" ? "danger" : "primaryFlat"}
                 onClick={confirm}
+                disabled={modal.kind === "edit" && saving}
                 className="min-h-[50px] flex-[1_1_160px] text-[15px] font-bold"
               >
                 {modal.kind === "remove"

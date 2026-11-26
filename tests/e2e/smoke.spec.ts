@@ -1,14 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
-
-/** The Phase 2 mock sign-in (in-memory only; replaced by Clerk in Phase 3). */
-async function mockSignIn(page: Page) {
-  await page
-    .getByRole("button", { name: /^(Login \/ Register|Log in)$/ })
-    .filter({ visible: true })
-    .first()
-    .click();
-  await page.getByRole("button", { name: "Continue with Google" }).click();
-}
+import { expect, test } from "@playwright/test";
 
 test("home redirects to the public Explore page with LendLoop branding", async ({
   page,
@@ -62,29 +52,35 @@ test("product details lets a visitor pick dates", async ({ page }) => {
   await expect(page.getByText("Available · Nov 27 (1 day)")).toBeVisible();
 });
 
-test("protected pages ask signed-out visitors to sign in", async ({ page }) => {
+test("protected pages send signed-out visitors to the sign-in modal", async ({
+  page,
+}) => {
   await page.goto("/borrowing");
+  // proxy.ts redirects to Explore, which opens the LendLoop modal.
+  await expect(page).toHaveURL(/\/explore$/);
   await expect(
     page.getByRole("dialog", { name: "Welcome back" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page).toHaveURL(/\/explore$/);
 });
 
-test("mock sign-in shows Borrowing requests", async ({ page }) => {
+test("the sign-in form validates before contacting Clerk", async ({ page }) => {
   await page.goto("/explore");
-  await mockSignIn(page);
   await page
-    .getByRole("link", { name: "Borrowing" })
+    .getByRole("button", { name: /^(Login \/ Register|Log in)$/ })
     .filter({ visible: true })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/borrowing$/);
+  const dialog = page.getByRole("dialog", { name: "Welcome back" });
+  await dialog.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(dialog.getByText("Enter your email address.")).toBeVisible();
+  await expect(dialog.getByText("Enter your password.")).toBeVisible();
+
+  await dialog.getByRole("tab", { name: "Create account" }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Borrowing" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Confirm pickup").filter({ visible: true }).first(),
+    page.getByRole("dialog", { name: "Create your account" }),
   ).toBeVisible();
 });
 

@@ -52,3 +52,33 @@ export function pickDate(
 export function rangeLength(start: Date, end: Date): number {
   return diffDays(start, end) + 1;
 }
+
+/** `YYYY-MM-DD` for a local date (used to carry a selection in a URL). */
+export function toIsoDate(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
+/**
+ * Restores a range from URL values (after a sign-in redirect), or null when
+ * the values are malformed or no longer a selectable range.
+ */
+export function restoreRange(
+  from: string | null,
+  to: string | null,
+  today: Date,
+  maxDays: number,
+  booked: Set<number>,
+): { start: Date; end: Date } | null {
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  if (!from || !to || !iso.test(from) || !iso.test(to)) return null;
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  // Reject impossible dates such as 2026-02-31 (they roll over).
+  if (toIsoDate(start) !== from || toIsoDate(end) !== to) return null;
+  if (start < today || end < start) return null;
+  if (booked.has(dayKey(start))) return null;
+  if (end > selectableLimit(start, maxDays, booked)) return null;
+  return { start, end };
+}

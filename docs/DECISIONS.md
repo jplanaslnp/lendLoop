@@ -51,3 +51,11 @@ Recorded during Phase 1. These describe differences between the design export (`
 - `@/*` resolves to `./src/*`. `app/` stays at the repository root (docs/09).
 - `cacheComponents` and `partialPrefetching` stay enabled, as in the Next.js 16.4 defaults. Revalidate this against the Clerk and Convex integration in Phases 3–4.
 - `agentRules: false` in `next.config.ts`, so `CLAUDE.md` remains the single source of agent instructions (no generated `AGENTS.md`).
+
+## Notes from Phase 2 (UI integration with mock data)
+Phase 2 reproduces the approved design as-is. None of the pending decisions above were resolved by it; these items still need a decision:
+- [ ] Public Explore cards currently show what the design shows signed-out visitors (photo, description, category, condition and availability; no owner details). This must be narrowed to the approved public fields when the Convex public query is built (Phase 5).
+- [ ] The design's mock signed-in user is "Jaume Planas" with a real-looking photo (`public/images/avatars/jaume.jpg`). Confirm this may stay as demo content, or replace it with a neutral placeholder before any public deployment.
+- [ ] Listings without photos use a neutral photo placeholder; the design used an editor-only "Drop photo" slot. Depends on the photo decision above.
+- [ ] The DJI Osmo Mobile product page (the design's detailed example) is reachable from its owner's profile but is not in the design's Explore list. Confirm whether every listing should expose Brand/Model/Includes.
+- [ ] Sign-in is simulated in memory for Phase 2 only (no persistence, no credentials stored). Phase 3 replaces it with Clerk and must decide how the custom modal maps to Clerk flows.

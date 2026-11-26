@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lendloop-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "source ~/.nvm/nvm.sh >/dev/null && nvm use 24 >/dev/null && pnpm dev"
+      ],
+      "port": 3000
+    }
+  ]
+}

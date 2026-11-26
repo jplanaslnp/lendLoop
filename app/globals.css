@@ -4,21 +4,194 @@
 @source not "../design";
 
 /*
- * Base palette from docs/08_DESIGN_UI.md. The full design-token set is
- * extracted from the design export in Phase 2.
+ * LendLoop design tokens — extracted from the approved Claude Design export
+ * (design/*.dc.html). Values are copied exactly; do not "round" them.
  */
 @theme {
-  --color-sage: #e8f0e2;
-  --color-surface: #fafbf8;
-  --color-forest: #2f4636;
-  --color-primary: #7040a0;
-  --color-lavender: #e9ddf5;
-  --color-sage-muted: #d5e3cf;
+  /* ---- Breakpoints (from the design's JS width checks) ---------------- */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 40rem; /* 640px  auth modal leaves fullscreen      */
+  --breakpoint-md: 47.5rem; /* 760px  mobile ↔ desktop layout         */
+  --breakpoint-bp900: 56.25rem; /* 900px  profile card goes horizontal */
+  --breakpoint-bp960: 60rem; /* 960px  product details two columns   */
+  --breakpoint-bp980: 61.25rem; /* 980px  profile item grid 3 columns  */
+  --breakpoint-lg: 62.5rem; /* 1000px list/detail split, share aside */
+  --breakpoint-xl: 68.75rem; /* 1100px wide paddings, 4-col grid      */
+  --breakpoint-bp1180: 73.75rem; /* 1180px two-month calendar, form pairs */
 
+  /* ---- Typography ------------------------------------------------------ */
   --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+  /* Named sizes keep the design's default ("normal") line-height. */
+  --text-xs--line-height: normal;
+  --text-sm--line-height: normal;
+  --text-base--line-height: normal;
+  --text-lg--line-height: normal;
+  --text-xl--line-height: normal;
+  --text-2xl--line-height: normal;
+  --tracking-tightest: -0.03em;
+  --tracking-tighter: -0.02em;
+  --tracking-tight: -0.01em;
+
+  /* ---- Brand palette (docs/08 + design export) ------------------------- */
+  --color-sage: #e8f0e2; /* page background */
+  --color-sage-muted: #d5e3cf;
+  --color-surface: #fafbf8; /* warm white cards */
+  --color-header: #f6f9f3; /* translucent header base */
+  --color-forest: #2f4636; /* primary text */
+  --color-primary: #7040a0;
+  --color-primary-hover: #5f3290;
+  --color-primary-deep: #5a2d8c; /* wordmark, lavender text */
+  --color-link-hover: #5a3086;
+  --color-lavender: #e9ddf5;
+  --color-lavender-soft: #f3ecfa;
+  --color-lavender-faint: #fbf8fe;
+  --color-lavender-band: #efe5f8; /* calendar range band */
+  --color-lavender-select: #f5eefb; /* selected list card */
+  --color-lilac: #b796d8; /* selected borders, today ring */
+  --color-lilac-soft: #cdb6e6;
+  --color-primary-disabled: #d9cde6;
+
+  /* ---- Text & neutrals ------------------------------------------------- */
+  --color-ink-muted: #4f6355; /* lead paragraphs */
+  --color-ink-soft: #556a5b; /* secondary text */
+  --color-ink-link: #3e5444; /* footer links, body copy */
+  --color-ink-faint: #8a988e; /* placeholders, dividers dots */
+  --color-ink-disabled: #a3afa6;
+  --color-ink-todo: #7d8c82;
+  --color-ink-out: #a9b5ac;
+  --color-ink-past: #c3ccc5;
+  --color-placeholder-ink: #8a7a99;
+  --color-image: #efe7ec; /* image placeholder background */
+  --color-hover-sage: #eef3ea;
+  --color-hover-sage-2: #f0f4ec;
+  --color-field-alt: #f7f9f4;
+  --color-overlay: #1f2e24;
+
+  /* ---- Status colours -------------------------------------------------- */
+  --color-success-bg: #e1f0da;
+  --color-success-fg: #1f5a2c;
+  --color-success-ink: #2c6b34;
+  --color-success-dot: #2ea44f;
+  --color-success-toast: #b9e3a8;
+  --color-warning-bg: #fff4cc;
+  --color-warning-fg: #8a6100;
+  --color-warning-ink: #7a5800;
+  --color-warning-dot: #edb800;
+  --color-ready-bg: #ffe48a;
+  --color-ready-fg: #6b4a00;
+  --color-ready-ring: #e0a800;
+  --color-danger: #b3261e;
+  --color-danger-hover: #97201a;
+  --color-danger-border: #d93a2b;
+  --color-danger-strong: #c62828;
+  --color-danger-bg: #fce1dd;
+  --color-danger-bg-2: #fde3e1;
+  --color-danger-hover-bg: #fcedeb;
+  --color-return-bg: #f1eaf9;
+  --color-cancel-bg: #e4e9e1;
+  --color-cancel-fg: #56655b;
+  --color-cancel-dot: #7a867e;
+  --color-booked-bg: #f1ecec;
+  --color-booked-fg: #b9a9a9;
+  --color-booked-legend: #eee9e9;
+  --color-booked-legend-border: #e2d7d7;
+
+  /* ---- Radii ----------------------------------------------------------- */
+  --radius-field: 12px;
+  --radius-card: 18px;
+  --radius-panel: 22px;
+  --radius-modal: 24px;
+
+  /* ---- Shadows --------------------------------------------------------- */
+  --shadow-card:
+    0 1px 2px rgba(47, 70, 54, 0.04), 0 10px 28px -12px rgba(47, 70, 54, 0.14);
+  --shadow-card-hover:
+    0 2px 4px rgba(47, 70, 54, 0.05), 0 22px 40px -16px rgba(47, 70, 54, 0.24);
+  --shadow-panel:
+    0 1px 2px rgba(47, 70, 54, 0.04), 0 16px 40px -18px rgba(47, 70, 54, 0.18);
+  --shadow-panel-soft:
+    0 1px 2px rgba(47, 70, 54, 0.04), 0 16px 40px -18px rgba(47, 70, 54, 0.16);
+  --shadow-panel-strong:
+    0 1px 2px rgba(47, 70, 54, 0.04), 0 16px 40px -18px rgba(47, 70, 54, 0.2);
+  --shadow-hero:
+    0 1px 2px rgba(47, 70, 54, 0.05), 0 16px 40px -18px rgba(47, 70, 54, 0.25);
+  --shadow-chip: 0 1px 2px rgba(47, 70, 54, 0.05);
+  --shadow-chip-active: 0 6px 16px rgba(112, 64, 160, 0.25);
+  --shadow-primary: 0 6px 16px rgba(112, 64, 160, 0.22);
+  --shadow-cta: 0 8px 20px -6px rgba(112, 64, 160, 0.45);
+  --shadow-cta-lg: 0 10px 24px -8px rgba(112, 64, 160, 0.5);
+  --shadow-badge: 0 2px 8px rgba(47, 70, 54, 0.12);
+  --shadow-avatar: 0 1px 4px rgba(47, 70, 54, 0.15);
+  --shadow-icon-btn: 0 1px 3px rgba(47, 70, 54, 0.08);
+  --shadow-gallery-btn: 0 4px 14px rgba(47, 70, 54, 0.18);
+  --shadow-modal: 0 30px 80px -20px rgba(31, 46, 36, 0.45);
+  --shadow-auth-modal: 0 30px 80px -20px rgba(31, 46, 36, 0.5);
+  --shadow-toast: 0 16px 40px -12px rgba(31, 46, 36, 0.5);
+  --shadow-menu: 0 18px 40px -12px rgba(31, 46, 36, 0.3);
+  --shadow-calendar: 0 14px 34px -18px rgba(47, 70, 54, 0.3);
+  --shadow-focus: 0 0 0 4px rgba(112, 64, 160, 0.12);
+  --shadow-mobile-cta: 0 -10px 30px -16px rgba(47, 70, 54, 0.25);
 }
 
-body {
-  background-color: var(--color-sage);
-  color: var(--color-forest);
+@layer base {
+  html,
+  body {
+    margin: 0;
+    background-color: var(--color-sage);
+  }
+
+  /* The design relies on the browser default line-height ("normal"), not
+     Tailwind preflight's 1.5. Elements with explicit leading override it. */
+  html {
+    line-height: normal;
+  }
+
+  body {
+    color: var(--color-forest);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-link-hover);
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Browser-default placeholder colour, as rendered in the design. */
+  input::placeholder,
+  textarea::placeholder {
+    color: #757575;
+    opacity: 1;
+  }
+
+  /* Keyboard focus for controls without their own design focus ring
+     (form fields use the design's lavender focus ring instead). */
+  :where(a, button, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility text-pretty {
+  text-wrap: pretty;
 }

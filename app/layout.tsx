@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 
 import { siteConfig } from "@/config/site";
+import { MockSessionProvider } from "@/features/auth/MockSessionProvider";
 
 import "./globals.css";
 
@@ -20,13 +21,17 @@ export const metadata: Metadata = {
   applicationName: siteConfig.name,
 };
 
+export const viewport: Viewport = {
+  themeColor: "#E8F0E2",
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${plusJakartaSans.variable} h-full antialiased`}
-    >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="en" className={`${plusJakartaSans.variable} antialiased`}>
+      <body className="min-h-screen bg-sage font-sans text-forest">
+        <MockSessionProvider>{children}</MockSessionProvider>
+      </body>
     </html>
   );
 }

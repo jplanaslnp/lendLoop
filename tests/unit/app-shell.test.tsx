@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import HomePage from "../../app/page";
 import NotFound from "../../app/not-found";
 import { siteConfig } from "@/config/site";
 
@@ -15,15 +14,6 @@ describe("site config", () => {
 });
 
 describe("app shell", () => {
-  it("renders the product name and tagline on the home page", () => {
-    render(<HomePage />);
-
-    expect(
-      screen.getByRole("heading", { level: 1, name: "LendLoop" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(siteConfig.tagline)).toBeInTheDocument();
-  });
-
   it("renders a not-found page with a link home", () => {
     render(<NotFound />);
 

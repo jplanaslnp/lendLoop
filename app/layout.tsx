@@ -5,7 +5,9 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { siteConfig } from "@/config/site";
 import { ROUTES } from "@/config/navigation";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ProfileSync } from "@/features/auth/ProfileSync";
 import { AUTH_QUERY, SIGN_IN_GATE_VALUE } from "@/features/auth/returnTo";
+import { ConvexClientProvider } from "@/lib/convex/ConvexClientProvider";
 
 import "./globals.css";
 
@@ -42,7 +44,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           signUpUrl={SIGN_IN_URL}
           afterSignOutUrl={ROUTES.explore}
         >
-          <AuthProvider>{children}</AuthProvider>
+          <ConvexClientProvider>
+            <ProfileSync />
+            <AuthProvider>{children}</AuthProvider>
+          </ConvexClientProvider>
         </ClerkProvider>
       </body>
     </html>

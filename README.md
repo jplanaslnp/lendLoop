@@ -31,9 +31,12 @@ Do not commit `.env.local`, Clerk secret keys, Convex deployment secrets, HMAC s
 ```bash
 nvm use
 pnpm install
-cp .env.example .env.local   # placeholders only; real keys are added in later phases
-pnpm dev                     # http://localhost:3000
+cp .env.example .env.local   # then add the Clerk development keys
+npx convex dev               # terminal 1: links the Convex dev deployment, writes NEXT_PUBLIC_CONVEX_URL
+pnpm dev                     # terminal 2: http://localhost:3000
 ```
+
+The Convex deployment needs `CLERK_JWT_ISSUER_DOMAIN` (your Clerk Frontend API URL) in its own environment variables, and Clerk's Convex integration must be active so session tokens carry `aud: "convex"`.
 
 For end-to-end tests, install the Playwright browser once:
 ```bash
@@ -48,7 +51,7 @@ pnpm exec playwright install chromium
 | `pnpm typecheck` | Generate Next.js route types and run `tsc --noEmit` |
 | `pnpm lint` | ESLint (zero warnings allowed) |
 | `pnpm format` / `pnpm format:check` | Prettier write / verify |
-| `pnpm test` | Vitest unit and component tests (`tests/unit`) |
+| `pnpm test` | Vitest unit/component tests (`tests/unit`) and Convex function tests (`tests/convex`) |
 | `pnpm test:e2e` | Playwright end-to-end tests (`tests/e2e`, desktop + mobile Chromium) |
 | `pnpm check` | typecheck + lint + format check + unit tests |
 

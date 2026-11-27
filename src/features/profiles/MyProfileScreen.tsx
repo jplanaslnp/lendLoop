@@ -18,7 +18,9 @@ import { ROUTES } from "@/config/navigation";
 import { useAuthUi } from "@/features/auth/AuthProvider";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { UserAvatar } from "@/features/auth/UserAvatar";
+import { useConvexProfile } from "@/features/auth/useConvexProfile";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
+import { MONTH_SHORT } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { MOCK_CURRENT_USER } from "@/mocks/people";
 import {
@@ -58,6 +60,12 @@ const INPUT =
 export function MyProfileScreen() {
   const { signOut } = useAuthUi();
   const user = useCurrentUser();
+  // LendLoop membership starts when the Convex profile is created.
+  const profile = useConvexProfile();
+  const joined = profile ? new Date(profile.createdAt) : null;
+  const memberSince = joined
+    ? `${MONTH_SHORT[joined.getMonth()] ?? ""} ${joined.getFullYear()}`
+    : user?.memberSince;
   const { user: clerkUser } = useUser();
   const toast = useToast(3200);
   const [items, setItems] = useState<readonly MyItem[]>(MY_ITEMS);
@@ -227,9 +235,9 @@ export function MyProfileScreen() {
                   <ProfileMeta icon="mail">{user.email}</ProfileMeta>
                 ) : null}
                 <ProfileMeta icon="building">{building}</ProfileMeta>
-                {user?.memberSince ? (
+                {memberSince ? (
                   <ProfileMeta icon="calendar">
-                    Member since {user.memberSince}
+                    Member since {memberSince}
                   </ProfileMeta>
                 ) : null}
               </div>

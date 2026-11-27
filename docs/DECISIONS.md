@@ -70,3 +70,11 @@ Decisions taken while wiring the approved modal to Clerk (`@clerk/nextjs` 7, cus
 - [ ] Clerk's password minimum on the development instance is 15 characters, while the design's copy and client check say "8+ characters". Either lower the Clerk setting to 8 or change the copy; until then Clerk's message is shown under the field.
 - [ ] The sign-up address is validated as designed but not sent to Clerk or stored anywhere (not appropriate for Clerk metadata). Decide in Phase 4 whether it moves to the Convex profile or to a post-sign-up step.
 - [ ] The Terms/Privacy checkbox is required by the form, but Clerk's legal-consent setting is off, so acceptance is not recorded. Enable it in Clerk (and pass `legalAccepted`) or record consent in Convex.
+
+## Notes from Phase 4 (Convex backend and identity bridge)
+- Convex dev deployment `gallant-opossum-232` (project `lendloop`, region ap-southeast-2) is linked through `npx convex dev`. `convex/_generated/` is committed, as Convex recommends.
+- Identity: Clerk's Convex integration (native, not a JWT template) issues session tokens with `aud: "convex"`; `convex/auth.config.ts` accepts only the Clerk issuer in the deployment variable `CLERK_JWT_ISSUER_DOMAIN`. Functions identify callers with `ctx.auth.getUserIdentity().subject` (stored as `users.clerkId`) and accept no user IDs, roles or emails from clients.
+- Profiles are created/refreshed by `users.ensureCurrent` after sign-in (`ProfileSync`). New profiles are always `role: "user"`, `isTrustedLender: false`; admin assignment stays a manual operator step (dashboard) until an audited admin function exists.
+- Every table and index from docs/05 exists; only `users` is written in Phase 4. `borrowRequests.endDate` semantics (inclusive vs. half-open) remain the open decision recorded under docs/06.
+- [ ] Clerk's default session token has no name or email claims, so profiles fall back to the name "Neighbour". Add a `name` claim in Clerk (Sessions → Customize session token). Whether to add `email` too depends on the notification design (Phase 10); it is left out for data minimisation.
+- [ ] The sign-up address field (Phase 3 note) is still not stored; the `users` table has no address field until that decision is made.

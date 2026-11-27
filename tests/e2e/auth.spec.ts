@@ -102,6 +102,27 @@ test("sign in from a protected link, keep the session, sign out", async ({
   ).toBeVisible();
 });
 
+test("signed-in members see the owner's short name and area", async ({
+  page,
+}) => {
+  await page.goto("/explore");
+  await openSignIn(page);
+  await signIn(page);
+  const card = page
+    .getByRole("main")
+    .getByRole("link")
+    .filter({ has: page.getByRole("heading", { name: "Projector" }) });
+  await expect(card.getByText("Marc S.")).toBeVisible({ timeout: 20_000 });
+  await expect(card.getByText("Patershol")).toBeVisible();
+  await expect(card.getByText(/Building/)).toHaveCount(0);
+
+  await card.click();
+  await expect(page).toHaveURL(/\/tools\/[a-z0-9]+$/);
+  await expect(
+    page.getByRole("link", { name: /Marc S\..*View profile/ }).first(),
+  ).toBeVisible({ timeout: 20_000 });
+});
+
 test("borrow request resumes after signing in", async ({ page }) => {
   await page.goto("/tools/osmo-mobile");
   await page

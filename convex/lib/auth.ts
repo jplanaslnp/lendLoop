@@ -31,14 +31,31 @@ export async function requireIdentity(ctx: Ctx): Promise<UserIdentity> {
   return identity;
 }
 
-/** The caller's profile, or null when signed out or not provisioned yet. */
+/** Clerk user IDs look like `user_2abc…`; seed IDs (`seed:…`) never do. */
+const CLERK_SUBJECT = /^user_[A-Za-z0-9]+$/;
+
+export function isClerkSubject(subject: string): boolean {
+  return CLERK_SUBJECT.test(subject);
+}
+
+/**
+ * The caller's profile, or null when signed out or not provisioned yet.
+ * Development seed users are never returned: they are not real accounts.
+ */
 export async function getCurrentUser(ctx: Ctx): Promise<Doc<"users"> | null> {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) return null;
-  return ctx.db
+  if (!identity || !isClerkSubject(identity.subject)) return null;
+  const user = await ctx.db
     .query("users")
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .unique();
+  return user && user.seedKey === undefined ? user : null;
+}
+
+/** A signed-in, enabled, real member (not a seed user), or null. */
+export async function getActiveMember(ctx: Ctx): Promise<Doc<"users"> | null> {
+  const user = await getCurrentUser(ctx);
+  return user && user.disabledAt === undefined ? user : null;
 }
 
 /** An active (not disabled) profile for the caller, or throws. */

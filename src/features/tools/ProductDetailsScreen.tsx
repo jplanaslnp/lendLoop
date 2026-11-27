@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -11,17 +12,25 @@ import {
 import { Logo } from "@/components/layout/Logo";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ToolCard } from "@/components/listings/ToolCard";
-import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { DateRangeCalendar } from "@/components/ui/DateRangeCalendar";
 import { Dialog } from "@/components/ui/Dialog";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { MapPreview } from "@/components/ui/MapPreview";
+import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { AvailabilityPill } from "@/components/ui/StatusBadge";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { getCategory, getConditionLabel } from "@/config/categories";
 import { ROUTES } from "@/config/navigation";
 import { useAuthUi } from "@/features/auth/AuthProvider";
+import {
+  areaName,
+  ownerOf,
+  toToolPhotos,
+  type ListingCard,
+  type ListingDetail,
+  type ToolPhoto,
+} from "@/features/listings/types";
 import { cn } from "@/lib/cn";
 import { formatShort, pluralDays } from "@/lib/dates";
 import {
@@ -34,13 +43,10 @@ import {
   type DateRange,
 } from "@/lib/dateRange";
 import { useGoBack } from "@/lib/useGoBack";
-import { avatarSrc, firstName, MOCK_TODAY, PEOPLE } from "@/mocks/people";
-import {
-  getSimilarTools,
-  MAX_LOAN_DAYS,
-  MOCK_BOOKED_RANGES,
-  type MockTool,
-} from "@/mocks/tools";
+// The calendar and request dialog stay mock UI until Phase 7.
+import { MOCK_TODAY } from "@/mocks/people";
+import { MAX_LOAN_DAYS, MOCK_BOOKED_RANGES } from "@/mocks/tools";
+import { api } from "@convex/_generated/api";
 
 import { ProductGallery } from "./ProductGallery";
 
@@ -57,8 +63,36 @@ const STEPS = [
   "Confirm receipt when you collect the item.",
 ];
 
-/** Product details with date selection and a mock borrow request flow. */
-export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
+const MAIN_PLACEHOLDER: ToolPhoto = {
+  kind: "placeholder",
+  label: "Main photo",
+};
+
+/** Same category first, then the rest; never the item itself. */
+function similarTo(
+  tool: ListingDetail,
+  all: readonly ListingCard[],
+  limit = 4,
+) {
+  const others = all.filter((t) => t.id !== tool.id);
+  return [
+    ...others.filter((t) => t.category === tool.category),
+    ...others.filter((t) => t.category !== tool.category),
+  ].slice(0, limit);
+}
+
+/**
+ * Product details from Convex, with date selection and a mock borrow
+ * request flow (real requests arrive in Phase 7). `routeId` is the ID in
+ * the URL, kept so resume links point back to the same address.
+ */
+export function ProductDetailsScreen({
+  tool,
+  routeId,
+}: {
+  tool: ListingDetail;
+  routeId: string;
+}) {
   const { isLoaded, isSignedIn, requireAuth, openAuth, guardLink } =
     useAuthUi();
   const router = useRouter();
@@ -77,13 +111,15 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  const owner = PEOPLE[tool.ownerId];
-  const ownerFirst = firstName(owner);
+  // Convex includes the owner only for signed-in members.
+  const owner = ownerOf(tool);
+  const ownerFirst = owner?.displayName.split(" ")[0] ?? "The owner";
   const category = getCategory(tool.category);
-  const availability = tool.available ? "available" : "borrowed";
-  const pickupPlace = isSignedIn
-    ? `${owner.building} · Gent`
-    : "Gent · approximate area";
+  const availability = tool.availability;
+  const pickupPlace = `${tool.locationLabel} · approximate area`;
+  const photos = toToolPhotos(tool.photos);
+  const allTools = useQuery(api.listings.list, {});
+  const similar = allTools ? similarTo(tool, allTools) : [];
 
   const { start, end } = range;
   const valid = Boolean(start && end);
@@ -158,7 +194,7 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
     });
     requireAuth(
       () => setRequestOpen(true),
-      `${ROUTES.tool(tool.id)}?${resume.toString()}`,
+      `${ROUTES.tool(routeId)}?${resume.toString()}`,
     );
   };
 
@@ -171,7 +207,7 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
       resumed.current = true;
       const params = new URLSearchParams(window.location.search);
       if (params.get(RESUME_INTENT) !== "request") return;
-      router.replace(ROUTES.tool(tool.id), { scroll: false });
+      router.replace(ROUTES.tool(routeId), { scroll: false });
       const restored = restoreRange(
         params.get("from"),
         params.get("to"),
@@ -188,7 +224,7 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
       if (isSignedIn) setRequestOpen(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [isLoaded, isSignedIn, booked, router, tool.id]);
+  }, [isLoaded, isSignedIn, booked, router, routeId]);
 
   const sendRequest = () => {
     setRequestOpen(false);
@@ -213,9 +249,9 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
       : "";
 
   const ownerBlock = (variant: "aside" | "mobile") =>
-    isSignedIn ? (
+    owner ? (
       <Link
-        href={ROUTES.user(owner.id)}
+        href={ROUTES.user(owner.profileId)}
         className={cn(
           "grid w-full items-center gap-3.5 text-left text-forest hover:text-forest",
           variant === "aside"
@@ -223,9 +259,10 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
             : "grid-cols-[56px_minmax(0,1fr)_20px]",
         )}
       >
-        <Avatar
-          src={avatarSrc(owner.id)}
-          alt={owner.shortName}
+        <PersonAvatar
+          name={owner.displayName}
+          imageUrl={owner.imageUrl}
+          alt={owner.displayName}
           size={variant === "aside" ? 60 : 56}
         />
         <span className="min-w-0">
@@ -235,10 +272,10 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
               variant === "aside" ? "text-[17px]" : "text-[16.5px]",
             )}
           >
-            {owner.fullName}
+            {owner.displayName}
           </span>
           <span className="mt-0.5 block text-sm text-ink-soft">
-            {owner.building} · Gent
+            {tool.locationLabel}
           </span>
           <span className="mt-1 block text-[13.5px] font-bold text-primary">
             View profile
@@ -246,6 +283,10 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
         </span>
         <Icon name="chevronRight" size={20} />
       </Link>
+    ) : isSignedIn ? (
+      <p className="m-0 text-[14.5px] leading-normal text-ink-soft">
+        Loading owner details…
+      </p>
     ) : (
       <div className="flex flex-col gap-3">
         <p className="m-0 text-[14.5px] leading-normal text-ink-soft">
@@ -328,7 +369,10 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
 
         <div className="grid grid-cols-1 items-start gap-7 md:mt-[26px] bp960:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
           <div className="flex min-w-0 flex-col gap-4 md:gap-[22px]">
-            <ProductGallery photos={tool.photos} name={tool.name} />
+            <ProductGallery
+              photos={photos.length > 0 ? photos : [MAIN_PLACEHOLDER]}
+              name={tool.name}
+            />
 
             <div className="md:hidden">
               <h1 className="m-0 text-[28px] leading-[1.1] font-extrabold tracking-tighter text-forest">
@@ -374,7 +418,7 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
                   </h3>
                   <dl className="mt-3 mb-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-[18px] gap-y-2 text-[14.5px]">
                     {[
-                      ...(tool.details ?? []),
+                      ...tool.details,
                       {
                         label: "Max. loan",
                         value: `Up to ${MAX_LOAN_DAYS} days`,
@@ -601,16 +645,18 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
           </aside>
         </div>
 
-        <section className="mt-7 md:mt-12">
-          <h2 className="mt-0 mb-3.5 text-[22px] font-extrabold tracking-tighter text-forest md:mb-5 md:text-[28px]">
-            Similar items nearby
-          </h2>
-          <div className="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4">
-            {getSimilarTools(tool).map((t) => (
-              <ToolCard key={t.id} tool={t} size="similar" />
-            ))}
-          </div>
-        </section>
+        {similar.length > 0 ? (
+          <section className="mt-7 md:mt-12">
+            <h2 className="mt-0 mb-3.5 text-[22px] font-extrabold tracking-tighter text-forest md:mb-5 md:text-[28px]">
+              Similar items nearby
+            </h2>
+            <div className="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4">
+              {similar.map((t) => (
+                <ToolCard key={t.id} tool={t} size="similar" />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
 
       <SiteFooter />
@@ -666,7 +712,7 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
           <span
             className="aspect-[4/3] w-[84px] rounded-[10px] bg-image bg-cover bg-center"
             style={
-              tool.photos[0]?.kind === "image"
+              tool.photos[0]
                 ? { backgroundImage: `url(${tool.photos[0].src})` }
                 : undefined
             }
@@ -674,7 +720,8 @@ export function ProductDetailsScreen({ tool }: { tool: MockTool }) {
           <div className="min-w-0">
             <div className="text-base font-bold text-forest">{tool.name}</div>
             <div className="mt-[3px] text-sm text-ink-soft">
-              From {owner.shortName} · {owner.building}
+              {owner ? `From ${owner.displayName} · ` : ""}
+              {areaName(tool.locationLabel)}
             </div>
           </div>
         </div>

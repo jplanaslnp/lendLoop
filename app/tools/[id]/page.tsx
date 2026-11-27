@@ -1,30 +1,36 @@
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
-import { ProductDetailsScreen } from "@/features/tools/ProductDetailsScreen";
-import { getTool, TOOLS } from "@/mocks/tools";
+import { ProductDetailsLoader } from "@/features/tools/ProductDetailsLoader";
+import { api } from "@convex/_generated/api";
 
 /**
- * Known mock ids are prerendered; other ids are allowed to block (there is
- * no approved loading design for these pages yet).
+ * Product details from Convex. The server lookup is anonymous (public
+ * fields only) and is used for the title and a real 404; the client then
+ * subscribes with the visitor's session, so members also get owner details.
+ * Rendered per request (no approved loading design for this page yet).
  */
 export const instant = false;
 
-export function generateStaticParams() {
-  return TOOLS.map((tool) => ({ id: tool.id }));
+/** Live Convex lookup at request time (the Convex client is not prerenderable). */
+async function getListing(id: string) {
+  await connection();
+  return fetchQuery(api.listings.get, { id });
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/tools/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const tool = getTool(id);
-  return { title: tool ? tool.name : "Tool not found" };
+  const listing = await getListing(id);
+  return { title: listing ? listing.name : "Tool not found" };
 }
 
 export default async function ToolPage({ params }: PageProps<"/tools/[id]">) {
   const { id } = await params;
-  const tool = getTool(id);
-  if (!tool) notFound();
-  return <ProductDetailsScreen tool={tool} />;
+  const listing = await getListing(id);
+  if (!listing) notFound();
+  return <ProductDetailsLoader routeId={id} initial={listing} />;
 }

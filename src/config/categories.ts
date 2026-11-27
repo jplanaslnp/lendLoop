@@ -1,8 +1,11 @@
+import type { Infer } from "convex/values";
+
 import type { IconName } from "@/components/ui/Icon";
+import type { categoryValidator, conditionValidator } from "@convex/schema";
 
 /**
- * Categories as shown in the approved design. The final category list is an
- * open decision (docs/DECISIONS.md); this is UI configuration for Phase 2 only.
+ * The approved categories (docs/DECISIONS.md, Phase 5). Ids must match
+ * `categoryValidator` in convex/schema.ts; the check below enforces it.
  */
 export const CATEGORIES = [
   { id: "home", label: "Home & Kitchen", icon: "home" },
@@ -44,7 +47,7 @@ export function getCategory(id: CategoryId) {
 
 export const CONDITIONS = [
   { id: "new", label: "New" },
-  { id: "likeNew", label: "Like New" },
+  { id: "like_new", label: "Like New" },
   { id: "good", label: "Good" },
   { id: "fair", label: "Fair" },
 ] as const;
@@ -54,3 +57,12 @@ export type ConditionId = (typeof CONDITIONS)[number]["id"];
 export function getConditionLabel(id: ConditionId): string {
   return CONDITIONS.find((c) => c.id === id)?.label ?? id;
 }
+
+/* Compile-time check: UI ids and Convex validators list the same values. */
+type ConvexCategory = Infer<typeof categoryValidator>;
+type ConvexCondition = Infer<typeof conditionValidator>;
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const _categoriesMatch: Same<CategoryId, ConvexCategory> = true;
+const _conditionsMatch: Same<ConditionId, ConvexCondition> = true;
+void _categoriesMatch;
+void _conditionsMatch;

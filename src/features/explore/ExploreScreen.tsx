@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { useState } from "react";
 
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -9,23 +10,30 @@ import {
 } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ToolCard } from "@/components/listings/ToolCard";
+import { ToolCardSkeleton } from "@/components/listings/ToolCardSkeleton";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ChipRow, FilterChip } from "@/components/ui/FilterChip";
+import { QueryErrorBoundary } from "@/components/ui/QueryErrorBoundary";
 import {
   EXPLORE_FILTER_CATEGORIES,
   getCategory,
   type CategoryId,
 } from "@/config/categories";
-import { getExploreTools } from "@/mocks/tools";
+import type { ListingCard } from "@/features/listings/types";
+import { api } from "@convex/_generated/api";
 
 type Filter = "all" | CategoryId;
 
-/** Explore — public (read-only) and signed-in tool browsing (mock data). */
+const PANEL = "rounded-[20px] bg-surface px-6 py-[72px]";
+const GRID = "grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 xl:grid-cols-4";
+
+/**
+ * Explore — public (read-only) and signed-in browsing of Convex listings.
+ * What each visitor may see is decided by `listings.list` in Convex.
+ */
 export function ExploreScreen() {
   const [filter, setFilter] = useState<Filter>("all");
-  const tools = getExploreTools().filter(
-    (t) => filter === "all" || t.category === filter,
-  );
 
   return (
     <div className="min-h-screen bg-sage pb-24 md:pb-16">
@@ -66,23 +74,71 @@ export function ExploreScreen() {
           })}
         </ChipRow>
 
-        {tools.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-            {tools.map((tool, i) => (
-              <ToolCard key={tool.id} tool={tool} priority={i < 4} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="Nothing shared here yet"
-            description="Be the first neighbour to share something in this category."
-            className="rounded-[20px] bg-surface px-6 py-[72px]"
-          />
-        )}
+        <QueryErrorBoundary fallback={(retry) => <LoadError retry={retry} />}>
+          <ExploreResults filter={filter} />
+        </QueryErrorBoundary>
       </main>
 
       <SiteFooter />
       <MobileBottomNav active="explore" />
+    </div>
+  );
+}
+
+function ExploreResults({ filter }: { filter: Filter }) {
+  const tools = useQuery(
+    api.listings.list,
+    filter === "all" ? {} : { category: filter },
+  );
+
+  if (tools === undefined) {
+    return (
+      <div className={GRID} role="status" aria-label="Loading tools">
+        {Array.from({ length: 8 }, (_, i) => (
+          <ToolCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (tools.length === 0) {
+    return (
+      <EmptyState
+        title="Nothing shared here yet"
+        description={
+          filter === "all"
+            ? "Be the first neighbour to share something."
+            : "Be the first neighbour to share something in this category."
+        }
+        className={PANEL}
+      />
+    );
+  }
+
+  return (
+    <div className={GRID}>
+      {tools.map((tool: ListingCard, i) => (
+        <ToolCard key={tool.id} tool={tool} priority={i < 4} />
+      ))}
+    </div>
+  );
+}
+
+function LoadError({ retry }: { retry: () => void }) {
+  return (
+    <div role="alert" className={`${PANEL} flex flex-col items-center gap-4`}>
+      <EmptyState
+        title="We couldn’t load the tools"
+        description="Check your connection and try again."
+        className="border-none p-0"
+      />
+      <Button
+        variant="outline"
+        onClick={retry}
+        className="min-h-[46px] px-6 text-[15px] font-bold"
+      >
+        Try again
+      </Button>
     </div>
   );
 }

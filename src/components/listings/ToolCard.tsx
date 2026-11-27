@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 
-import { Avatar } from "@/components/ui/Avatar";
+import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { AvailabilityOverlayBadge } from "@/components/ui/StatusBadge";
 import { ToolImage } from "@/components/ui/ToolImage";
 import { getCategory, getConditionLabel } from "@/config/categories";
 import { ROUTES } from "@/config/navigation";
-import { useAuthUi } from "@/features/auth/AuthProvider";
+import {
+  areaName,
+  ownerOf,
+  toToolPhotos,
+  type ListingCard,
+} from "@/features/listings/types";
 import { cn } from "@/lib/cn";
-import { avatarSrc, PEOPLE } from "@/mocks/people";
-import type { MockTool } from "@/mocks/tools";
 
 /**
- * Listing card (Explore grid and "Similar items nearby").
- * Signed-out visitors see category + condition instead of owner details.
+ * Listing card (Explore grid and "Similar items nearby"). Convex sends the
+ * owner only to signed-in members; everyone else sees category + condition.
  */
 const SIZES = {
   explore: {
@@ -42,13 +45,12 @@ export function ToolCard({
   size = "explore",
   priority,
 }: {
-  tool: MockTool;
+  tool: ListingCard;
   size?: keyof typeof SIZES;
   priority?: boolean;
 }) {
-  const { isSignedIn } = useAuthUi();
   const s = SIZES[size];
-  const owner = PEOPLE[tool.ownerId];
+  const owner = ownerOf(tool);
 
   return (
     <Link
@@ -57,13 +59,13 @@ export function ToolCard({
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-image">
         <ToolImage
-          photo={tool.photos[0]}
+          photo={toToolPhotos(tool.photos)[0]}
           alt={tool.name}
           sizes="(min-width: 1100px) 25vw, (min-width: 760px) 33vw, 50vw"
           priority={priority}
         />
         <AvailabilityOverlayBadge
-          availability={tool.available ? "available" : "borrowed"}
+          availability={tool.availability}
           blur={size === "explore"}
           className={cn(
             "top-2.5 left-2.5 md:top-3 md:right-3 md:left-auto",
@@ -89,7 +91,7 @@ export function ToolCard({
           {tool.description}
         </p>
         <div className={cn("h-px bg-[rgba(47,70,54,.1)]", s.divider)} />
-        {isSignedIn ? (
+        {owner ? (
           <div className="mt-auto flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <span
@@ -98,10 +100,15 @@ export function ToolCard({
                   s.avatar,
                 )}
               >
-                <Avatar src={avatarSrc(owner.id)} alt="" size={30} fluid />
+                <PersonAvatar
+                  name={owner.displayName}
+                  imageUrl={owner.imageUrl}
+                  size={30}
+                  fluid
+                />
               </span>
               <span className={cn("truncate font-medium text-forest", s.meta)}>
-                {owner.shortName}
+                {owner.displayName}
               </span>
             </div>
             <span
@@ -111,7 +118,7 @@ export function ToolCard({
               )}
             >
               <span className="size-1 rounded-full bg-forest" aria-hidden />
-              {owner.building}
+              {areaName(tool.locationLabel)}
             </span>
           </div>
         ) : (

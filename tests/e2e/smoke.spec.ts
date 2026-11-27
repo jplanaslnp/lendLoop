@@ -16,9 +16,53 @@ test("home redirects to the public Explore page with LendLoop branding", async (
   ).toBeVisible();
 });
 
-test("signed-out Explore does not show owner details", async ({ page }) => {
+// Explore and product data come from the Convex dev deployment, seeded
+// with `npx convex run seed:run` (README → Development seed data).
+
+test("signed-out Explore shows item details but no owner", async ({ page }) => {
   await page.goto("/explore");
+  const card = page
+    .getByRole("main")
+    .getByRole("link")
+    .filter({ has: page.getByRole("heading", { name: "Projector" }) });
+  await expect(card.getByText(/Full HD portable projector/)).toBeVisible();
+  await expect(card.getByText("Electronics")).toBeVisible();
+  await expect(card.getByText("Like New")).toBeVisible();
+  await expect(card.getByText("Available")).toBeVisible();
   await expect(page.getByRole("main").getByText("Marc S.")).toHaveCount(0);
+});
+
+test("signed-out product page shows the area but not the owner", async ({
+  page,
+}) => {
+  await page.goto("/tools/projector");
+  await expect(
+    page
+      .getByText("Patershol, Gent · approximate area")
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByText("Sign in to see who is sharing this item.")
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible();
+  await expect(page.getByText("Marc S.")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /View profile/ })).toHaveCount(0);
+});
+
+test("an unknown tool ID renders the not-found page", async ({ page }) => {
+  await page.goto("/tools/not-a-real-tool");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Page not found" }),
+  ).toBeVisible();
+  // The streamed page can't change the status code once sent, so Next.js
+  // marks it noindex instead (dev mode still answers 404).
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex",
+  );
 });
 
 test("category filters narrow the list", async ({ page }) => {

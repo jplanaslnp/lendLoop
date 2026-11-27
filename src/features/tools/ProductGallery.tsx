@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { ToolImage } from "@/components/ui/ToolImage";
 import { cn } from "@/lib/cn";
-import type { ToolPhoto } from "@/mocks/tools";
+import type { ToolPhoto } from "@/features/listings/types";
 
 /** Hero photo with previous/next controls, counter and thumbnails. */
 export function ProductGallery({

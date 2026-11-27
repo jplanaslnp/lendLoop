@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { cn } from "@/lib/cn";
-import type { ToolPhoto } from "@/mocks/tools";
+import type { ToolPhoto } from "@/features/listings/types";
 
 import { Icon } from "./Icon";
 

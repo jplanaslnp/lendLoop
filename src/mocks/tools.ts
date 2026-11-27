@@ -1,12 +1,11 @@
 import type { CategoryId, ConditionId } from "@/config/categories";
+import type { ToolPhoto } from "@/features/listings/types";
 
 import type { PersonId } from "./people";
 
 /** Phase 2 mock catalogue — content copied from the design prototype. */
 
-export type ToolPhoto =
-  | { kind: "image"; src: string; label: string }
-  | { kind: "placeholder"; label: string };
+export type { ToolPhoto };
 
 export type MockTool = {
   id: string;
@@ -51,7 +50,7 @@ export const TOOLS: readonly MockTool[] = [
     description:
       "Full HD portable projector, perfect for movie nights and presentations in the courtyard.",
     category: "electronics",
-    condition: "likeNew",
+    condition: "like_new",
     ownerId: "marc",
     available: true,
     photos: [photo("projector")],
@@ -75,7 +74,7 @@ export const TOOLS: readonly MockTool[] = [
     description:
       "Cordless drill with battery and bits set. Great for home DIY projects and shelves.",
     category: "diy",
-    condition: "likeNew",
+    condition: "like_new",
     ownerId: "david",
     available: true,
     photos: [photo("drill")],
@@ -99,7 +98,7 @@ export const TOOLS: readonly MockTool[] = [
     description:
       "Adjustable tripod up to 160 cm, compatible with most cameras and phones.",
     category: "electronics",
-    condition: "likeNew",
+    condition: "like_new",
     ownerId: "ruben",
     available: true,
     photos: [photo("tripod")],
@@ -123,7 +122,7 @@ export const TOOLS: readonly MockTool[] = [
     description:
       "4K drone with stabilized camera. Perfect for travel and creative projects.",
     category: "electronics",
-    condition: "likeNew",
+    condition: "like_new",
     ownerId: "sara",
     available: false,
     photos: [photo("drone")],
@@ -159,7 +158,7 @@ export const TOOLS: readonly MockTool[] = [
     description:
       "5L stand mixer with whisk, dough hook and beater. Ideal for weekend baking.",
     category: "home",
-    condition: "likeNew",
+    condition: "like_new",
     ownerId: "emma",
     available: true,
     photos: [{ kind: "placeholder", label: "Main photo" }],
@@ -197,7 +196,7 @@ export const TOOLS: readonly MockTool[] = [
     longDescription:
       "Handheld smartphone gimbal that stabilizes your videos and photos for smooth, professional results. Easy to use, lightweight and perfect for travel, events or everyday filming. Folds down small enough for a backpack, and the mini tripod doubles as a handle for longer shots.",
     category: "electronics",
-    condition: "likeNew",
+    condition: "like_new",
     conditionNote: "Used a handful of times, no visible wear.",
     ownerId: "ruben",
     available: true,

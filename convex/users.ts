@@ -2,7 +2,12 @@ import type { UserIdentity } from "convex/server";
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { authError, getCurrentUser, requireIdentity } from "./lib/auth";
+import {
+  authError,
+  getCurrentUser,
+  isClerkSubject,
+  requireIdentity,
+} from "./lib/auth";
 import { roleValidator } from "./schema";
 
 /**
@@ -71,6 +76,9 @@ export const ensureCurrent = mutation({
   returns: v.id("users"),
   handler: async (ctx) => {
     const identity = await requireIdentity(ctx);
+    if (!isClerkSubject(identity.subject)) {
+      throw authError("FORBIDDEN", "Unsupported account.");
+    }
     const { name, email } = profileFromIdentity(identity);
     const now = Date.now();
 
@@ -80,6 +88,10 @@ export const ensureCurrent = mutation({
       .unique();
 
     if (existing) {
+      // Unreachable for seed rows (their clerkId is `seed:…`); kept explicit.
+      if (existing.seedKey !== undefined) {
+        throw authError("FORBIDDEN", "Unsupported account.");
+      }
       if (existing.disabledAt !== undefined) {
         throw authError("FORBIDDEN", "This account is disabled.");
       }

@@ -38,6 +38,18 @@ pnpm dev                     # terminal 2: http://localhost:3000
 
 The Convex deployment needs `CLERK_JWT_ISSUER_DOMAIN` (your Clerk Frontend API URL) in its own environment variables, and Clerk's Convex integration must be active so session tokens carry `aud: "convex"`.
 
+### Development seed data
+Explore starts empty until listings exist. To load the design's 13 demo tools (owned by fictional neighbours) into your **development** deployment:
+```bash
+npx convex env set LENDLOOP_DEV_SEED enabled   # once, dev deployment only
+npx convex run seed:run                        # safe to repeat: updates, never duplicates
+```
+To remove the demo data again (only seed rows are deleted; real accounts are untouched):
+```bash
+npx convex run seed:clear
+```
+Never set `LENDLOOP_DEV_SEED` on a production deployment; without it both functions refuse to run. The end-to-end tests expect the seed data to be present.
+
 For end-to-end tests, install the Playwright browser once:
 ```bash
 pnpm exec playwright install chromium

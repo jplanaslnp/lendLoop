@@ -2,9 +2,9 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 /**
- * LendLoop data model (docs/05_DATABASE_SCHEMA.md). Phase 4 creates every
- * table and index; only `users` is written to so far. Listings and loans are
- * implemented from Phase 5 on, and their open lifecycle questions are tracked
+ * LendLoop data model (docs/05_DATABASE_SCHEMA.md). Phase 4 created every
+ * table; Phase 5 reads listings (public and member views). Loans are
+ * implemented from Phase 7 on, and their open lifecycle questions are tracked
  * in docs/DECISIONS.md.
  */
 
@@ -62,7 +62,16 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     disabledAt: v.optional(v.number()),
-  }).index("by_clerkId", ["clerkId"]),
+    /** Avatar path or URL, shown to signed-in members only. */
+    imageUrl: v.optional(v.string()),
+    /**
+     * Set only on fictional development seed users (convex/seed.ts). Such
+     * rows are never treated as a signed-in identity (convex/lib/auth.ts).
+     */
+    seedKey: v.optional(v.string()),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_seedKey", ["seedKey"]),
 
   listings: defineTable({
     ownerId: v.id("users"),
@@ -70,14 +79,34 @@ export default defineSchema({
     category: categoryValidator,
     condition: conditionValidator,
     description: v.string(),
+    /** Longer text for the product page; falls back to `description`. */
+    longDescription: v.optional(v.string()),
+    conditionNote: v.optional(v.string()),
+    /** Optional item facts shown on the product page (e.g. Brand, Model). */
+    details: v.optional(
+      v.array(v.object({ label: v.string(), value: v.string() })),
+    ),
+    /**
+     * Approximate area only, e.g. "Patershol, Gent". Public. Never an
+     * address, building, floor or door (docs/DECISIONS.md, Phase 5).
+     */
+    locationLabel: v.string(),
+    /** Photos bundled with the app (`/images/...`), used by seed data. */
+    photos: v.optional(
+      v.array(v.object({ path: v.string(), label: v.string() })),
+    ),
     status: listingStatusValidator,
     createdAt: v.number(),
     updatedAt: v.number(),
+    /** User uploads, if approved for Phase 6. */
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     removedAt: v.optional(v.number()),
     removedBy: v.optional(v.id("users")),
     removalReason: v.optional(v.string()),
+    /** Set only on development seed listings (convex/seed.ts). */
+    seedKey: v.optional(v.string()),
   })
+    .index("by_seedKey", ["seedKey"])
     .index("by_owner", ["ownerId"])
     .index("by_status", ["status"])
     .index("by_category_and_status", ["category", "status"])

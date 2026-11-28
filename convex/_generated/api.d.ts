@@ -8,10 +8,16 @@
  * @module
  */
 
+import type * as crons from "../crons.js";
+import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_imageFormat from "../lib/imageFormat.js";
+import type * as lib_listingRules from "../lib/listingRules.js";
 import type * as listings from "../listings.js";
+import type * as myListings from "../myListings.js";
 import type * as seed from "../seed.js";
 import type * as seedData from "../seedData.js";
+import type * as uploads from "../uploads.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,10 +27,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
+  http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/imageFormat": typeof lib_imageFormat;
+  "lib/listingRules": typeof lib_listingRules;
   listings: typeof listings;
+  myListings: typeof myListings;
   seed: typeof seed;
   seedData: typeof seedData;
+  uploads: typeof uploads;
   users: typeof users;
 }>;
 

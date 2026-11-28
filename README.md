@@ -50,6 +50,13 @@ npx convex run seed:clear
 ```
 Never set `LENDLOOP_DEV_SEED` on a production deployment; without it both functions refuse to run. The end-to-end tests expect the seed data to be present.
 
+### Photo uploads
+Listing photos are uploaded to the Convex HTTP endpoint `POST /photos` (on the `.convex.site` URL). The deployment must allow the app's origin:
+```bash
+npx convex env set APP_ORIGINS "http://localhost:3000,http://localhost:3100"   # dev
+```
+Set it to your production site on the production deployment when you deploy. Unpublished photos are deleted after 24 hours by a daily Convex cron.
+
 For end-to-end tests, install the Playwright browser once:
 ```bash
 pnpm exec playwright install chromium

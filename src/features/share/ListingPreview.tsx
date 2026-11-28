@@ -4,13 +4,15 @@ import { Icon } from "@/components/ui/Icon";
 import { AvailabilityOverlayBadge } from "@/components/ui/StatusBadge";
 import { UserAvatar } from "@/features/auth/UserAvatar";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
+import { areaName } from "@/features/listings/types";
 import { cn } from "@/lib/cn";
-import { MOCK_CURRENT_USER } from "@/mocks/people";
 
 type PreviewProps = {
   name: string;
   description: string;
   mainPhoto: string | null;
+  /** Approximate area typed in the form ("Patershol, Gent"). */
+  area: string;
   variant: "side" | "inline";
 };
 
@@ -50,6 +52,7 @@ export function ListingPreviewCard({
   name,
   description,
   mainPhoto,
+  area,
   variant,
 }: PreviewProps) {
   const user = useCurrentUser();
@@ -126,7 +129,7 @@ export function ListingPreviewCard({
             )}
           >
             <span className="size-1 rounded-full bg-forest" aria-hidden />
-            {MOCK_CURRENT_USER.building}
+            {area.trim() ? areaName(area) : "Your area"}
           </span>
         </div>
       </div>

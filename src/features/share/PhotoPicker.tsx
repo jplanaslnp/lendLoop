@@ -4,10 +4,21 @@ import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
+import type { Id } from "@convex/_generated/dataModel";
+import { PHOTOS_MAX } from "@convex/lib/listingRules";
 
-export type LocalPhoto = { id: string; src: string };
+/**
+ * A photo in the form: a new local file (`file`, previewed from an object
+ * URL) and/or an upload already stored in Convex (`uploadId`).
+ */
+export type LocalPhoto = {
+  id: string;
+  src: string;
+  file?: File;
+  uploadId?: Id<"uploads">;
+};
 
-export const MAX_PHOTOS = 4;
+export const MAX_PHOTOS = PHOTOS_MAX;
 
 type PhotoPickerProps = {
   photos: readonly LocalPhoto[];
@@ -19,9 +30,8 @@ type PhotoPickerProps = {
 };
 
 /**
- * Local photo picker (drag & drop, reorder, remove). Phase 2 keeps photos as
- * in-browser object URLs only — nothing is uploaded. Whether photos are part
- * of v1 is an open decision (docs/DECISIONS.md).
+ * Photo picker (drag & drop, reorder, remove). New files are previewed
+ * locally and uploaded to Convex when the listing is published or saved.
  */
 export function PhotoPicker({
   photos,
@@ -66,7 +76,7 @@ export function PhotoPicker({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         multiple
         className="hidden"
         aria-hidden

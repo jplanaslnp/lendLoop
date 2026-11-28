@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { ConvexError } from "convex/values";
 import { useState, type MouseEvent } from "react";
 
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -14,6 +17,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { getCategory } from "@/config/categories";
 import { ROUTES } from "@/config/navigation";
 import { useAuthUi } from "@/features/auth/AuthProvider";
 import { RequireAuth } from "@/features/auth/RequireAuth";
@@ -26,11 +30,9 @@ import { MOCK_CURRENT_USER } from "@/mocks/people";
 import {
   BORROWING_HISTORY,
   LENDING_HISTORY,
-  MY_ITEMS,
-  ON_LOAN_STATUSES,
   toolImage,
-  type MyItem,
 } from "@/mocks/profiles";
+import { api } from "@convex/_generated/api";
 
 import {
   HistoryList,
@@ -41,11 +43,8 @@ import {
   SectionHeading,
 } from "./ProfileParts";
 
-const ON_LOAN_IDS = new Set(
-  LENDING_HISTORY.filter((r) => ON_LOAN_STATUSES.includes(r.status)).map(
-    (r) => r.itemId,
-  ),
-);
+/** One of the caller's active listings (Convex `myListings.mine`). */
+type MyItem = FunctionReturnType<typeof api.myListings.mine>[number];
 
 type ModalState =
   | { kind: "remove"; item: MyItem }
@@ -56,7 +55,10 @@ type ModalState =
 const INPUT =
   "box-border h-[50px] rounded-field border border-solid border-[rgba(47,70,54,.18)] bg-white px-4 text-base font-medium text-forest outline-none focus:border-primary focus:shadow-focus";
 
-/** My Profile — account summary, my listings and loan histories (mock). */
+/**
+ * My Profile — account summary, my listings (Convex) and loan histories
+ * (mock until Phases 7–8).
+ */
 export function MyProfileScreen() {
   const { signOut } = useAuthUi();
   const user = useCurrentUser();
@@ -68,7 +70,10 @@ export function MyProfileScreen() {
     : user?.memberSince;
   const { user: clerkUser } = useUser();
   const toast = useToast(3200);
-  const [items, setItems] = useState<readonly MyItem[]>(MY_ITEMS);
+  const myListings = useQuery(api.myListings.mine);
+  const items = myListings ?? [];
+  const archiveListing = useMutation(api.myListings.archive);
+  const [removing, setRemoving] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   // Building is mock data until the Convex profile exists (Phase 4).
@@ -87,14 +92,33 @@ export function MyProfileScreen() {
   const confirm = () => {
     if (!modal) return;
     if (modal.kind === "remove") {
-      setItems((list) => list.filter((i) => i.id !== modal.item.id));
-      setModal(null);
-      toast.show(`${modal.item.name} removed from your listings.`);
+      void removeItem(modal.item);
     } else if (modal.kind === "logout") {
       setModal(null);
       void signOut();
     } else {
       void saveProfile();
+    }
+  };
+
+  /** Archives the listing in Convex (owner-only, refused while on loan). */
+  const removeItem = async (item: MyItem) => {
+    if (removing) return;
+    setRemoving(true);
+    try {
+      await archiveListing({ id: item.id });
+      setModal(null);
+      toast.show(`${item.name} removed from your listings.`);
+    } catch (error) {
+      setModal(null);
+      toast.show(
+        error instanceof ConvexError
+          ? ((error.data as { message?: string }).message ??
+              "Couldn’t remove the listing.")
+          : "Couldn’t remove the listing. Please try again.",
+      );
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -119,7 +143,7 @@ export function MyProfileScreen() {
   };
 
   const itemMenu = (item: MyItem, mobile: boolean) => {
-    const locked = ON_LOAN_IDS.has(item.id);
+    const locked = item.onLoan;
     const row = cn(
       "flex items-center gap-2.5 rounded-[10px] px-3 text-[14.5px] font-semibold",
       mobile ? "h-11" : "h-[42px]",
@@ -134,7 +158,7 @@ export function MyProfileScreen() {
         )}
       >
         <Link
-          href={ROUTES.share}
+          href={ROUTES.editListing(item.id)}
           role="menuitem"
           className={cn(
             row,
@@ -145,7 +169,7 @@ export function MyProfileScreen() {
           Edit listing
         </Link>
         <Link
-          href={ROUTES.explore}
+          href={ROUTES.tool(item.id)}
           role="menuitem"
           className={cn(
             row,
@@ -280,7 +304,11 @@ export function MyProfileScreen() {
               }
             />
 
-            {items.length > 0 ? (
+            {myListings === undefined ? (
+              <p role="status" className="m-0 py-10 text-center text-ink-soft">
+                Loading your items…
+              </p>
+            ) : items.length > 0 ? (
               <>
                 <div className="hidden grid-cols-2 gap-[22px] md:grid bp980:grid-cols-3">
                   {items.map((item) => (
@@ -289,10 +317,10 @@ export function MyProfileScreen() {
                       className="relative flex min-w-0 flex-col rounded-card border border-solid border-[rgba(47,70,54,.08)] bg-surface shadow-card transition-[transform,box-shadow] duration-[250ms] ease-in-out hover:-translate-y-[3px] hover:shadow-card-hover"
                     >
                       <ItemTile
-                        image={toolImage(item.image)}
+                        image={item.mainPhoto ?? ""}
                         name={item.name}
-                        categoryLabel={item.categoryLabel}
-                        available={!ON_LOAN_IDS.has(item.id)}
+                        categoryLabel={getCategory(item.category).label}
+                        available={!item.onLoan}
                       >
                         {menuButton(item, false)}
                       </ItemTile>
@@ -311,10 +339,10 @@ export function MyProfileScreen() {
                       )}
                     >
                       <ItemRowContent
-                        image={toolImage(item.image)}
+                        image={item.mainPhoto ?? ""}
                         name={item.name}
-                        categoryLabel={item.categoryLabel}
-                        available={!ON_LOAN_IDS.has(item.id)}
+                        categoryLabel={getCategory(item.category).label}
+                        available={!item.onLoan}
                       />
                       {menuButton(item, true)}
                       {menu === item.id ? itemMenu(item, true) : null}
@@ -464,7 +492,7 @@ export function MyProfileScreen() {
               <Button
                 variant={modal.kind === "remove" ? "danger" : "primaryFlat"}
                 onClick={confirm}
-                disabled={modal.kind === "edit" && saving}
+                disabled={(modal.kind === "edit" && saving) || removing}
                 className="min-h-[50px] flex-[1_1_160px] text-[15px] font-bold"
               >
                 {modal.kind === "remove"

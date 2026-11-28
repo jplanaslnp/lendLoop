@@ -1,5 +1,10 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { ConvexError } from "convex/values";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useRef,
@@ -26,16 +31,21 @@ import { ROUTES } from "@/config/navigation";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { cn } from "@/lib/cn";
 import { MOBILE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 import { GoodToKnow, ListingPreviewCard } from "./ListingPreview";
 import { MAX_PHOTOS, PhotoPicker, type LocalPhoto } from "./PhotoPicker";
 import {
+  AREA_MAX,
   DESCRIPTION_MAX,
   NAME_MAX,
+  photoFileProblem,
   SHARE_FIELD_ORDER,
   validateShareForm,
   type ShareField,
 } from "./shareForm";
+import { PhotoUploadError, uploadPhoto } from "./uploadPhoto";
 
 const LABEL = "text-base font-bold text-forest md:text-[17px]";
 const INPUT =
@@ -44,14 +54,50 @@ const ERROR_TEXT = "text-[13.5px] font-semibold text-danger";
 
 let photoSeq = 0;
 
-/** Share a Tool — create-listing form with live preview (UI only). */
-export function ShareToolScreen() {
+export type EditableListing = NonNullable<
+  FunctionReturnType<typeof api.myListings.getForEdit>
+>;
+
+type ServerError = {
+  code?: string;
+  message?: string;
+  fields?: Partial<Record<ShareField, string>>;
+};
+
+const isObjectUrl = (src: string) => src.startsWith("blob:");
+
+/**
+ * Share a Tool — create a listing, or edit one (`editing`), with a live
+ * preview. Photos are uploaded on publish; Convex validates everything.
+ */
+export function ShareToolScreen({ editing }: { editing?: EditableListing }) {
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<CategoryId | "">("");
-  const [condition, setCondition] = useState<ConditionId | "">("");
-  const [description, setDescription] = useState("");
-  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const router = useRouter();
+  const { getToken } = useAuth();
+  const createListing = useMutation(api.myListings.create);
+  const updateListing = useMutation(api.myListings.update);
+  const [name, setName] = useState(editing?.name ?? "");
+  const [category, setCategory] = useState<CategoryId | "">(
+    editing?.category ?? "",
+  );
+  const [condition, setCondition] = useState<ConditionId | "">(
+    editing?.condition ?? "",
+  );
+  const [description, setDescription] = useState(editing?.description ?? "");
+  const [area, setArea] = useState(editing?.area ?? "");
+  const [photos, setPhotos] = useState<LocalPhoto[]>(
+    () =>
+      editing?.photos.map((p) => ({
+        id: `p${++photoSeq}`,
+        src: p.src,
+        uploadId: p.uploadId,
+      })) ?? [],
+  );
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [serverErrors, setServerErrors] = useState<
+    Partial<Record<ShareField, string>>
+  >({});
   const [tried, setTried] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
@@ -66,7 +112,9 @@ export function ShareToolScreen() {
   // Release in-memory object URLs when leaving the page.
   useEffect(
     () => () => {
-      photosRef.current.forEach((p) => URL.revokeObjectURL(p.src));
+      photosRef.current.forEach((p) => {
+        if (isObjectUrl(p.src)) URL.revokeObjectURL(p.src);
+      });
       if (noteTimer.current) clearTimeout(noteTimer.current);
     },
     [],
@@ -77,9 +125,10 @@ export function ShareToolScreen() {
     category,
     condition,
     description,
+    area,
     photoCount: photos.length,
   });
-  const errors = tried ? allErrors : {};
+  const errors = tried ? { ...serverErrors, ...allErrors } : {};
 
   const note = (message: string) => {
     if (noteTimer.current) clearTimeout(noteTimer.current);
@@ -88,7 +137,9 @@ export function ShareToolScreen() {
   };
 
   const addFiles = (files: File[]) => {
-    const images = files.filter((f) => f.type.startsWith("image/"));
+    const problem = files.map(photoFileProblem).find(Boolean);
+    const images = files.filter((f) => !photoFileProblem(f));
+    if (problem) note(problem);
     if (images.length === 0) return;
     const room = MAX_PHOTOS - photos.length;
     if (images.length > room) {
@@ -101,6 +152,7 @@ export function ShareToolScreen() {
     const added = images.slice(0, Math.max(0, room)).map((file) => ({
       id: `p${++photoSeq}`,
       src: URL.createObjectURL(file),
+      file,
     }));
     setPhotos((list) => [...list, ...added].slice(0, MAX_PHOTOS));
   };
@@ -108,7 +160,9 @@ export function ShareToolScreen() {
   const removePhoto = (id: string) =>
     setPhotos((list) => {
       const removed = list.find((p) => p.id === id);
-      if (removed) URL.revokeObjectURL(removed.src);
+      if (removed && isObjectUrl(removed.src)) {
+        URL.revokeObjectURL(removed.src);
+      }
       return list.filter((p) => p.id !== id);
     });
 
@@ -121,36 +175,99 @@ export function ShareToolScreen() {
       return next;
     });
 
+  const scrollToField = (first: ShareField) => {
+    const el = document.querySelector<HTMLElement>(`[data-field="${first}"]`);
+    if (!el) return;
+    window.scrollTo({
+      top: el.getBoundingClientRect().top + window.scrollY - 100,
+      behavior: "smooth",
+    });
+    const input = el.querySelector<HTMLElement>("input,select,textarea,button");
+    if (input && first !== "photos") {
+      setTimeout(() => input.focus({ preventScroll: true }), 350);
+    }
+  };
+
+  /** Uploads new photos (once each) and returns all upload IDs in order. */
+  const uploadNewPhotos = async (): Promise<Id<"uploads">[]> => {
+    const ids: Id<"uploads">[] = [];
+    for (const photo of photos) {
+      if (photo.uploadId) {
+        ids.push(photo.uploadId);
+        continue;
+      }
+      if (!photo.file) throw new PhotoUploadError("Add the photo again.");
+      const uploadId = await uploadPhoto(photo.file, () => getToken());
+      ids.push(uploadId);
+      // Keep the ID so a retry after a failed save doesn't re-upload.
+      setPhotos((list) =>
+        list.map((p) => (p.id === photo.id ? { ...p, uploadId } : p)),
+      );
+    }
+    return ids;
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setFormError(null);
+    setServerErrors({});
+    try {
+      const photoIds = await uploadNewPhotos();
+      if (category === "" || condition === "") return;
+      const values = { name, category, condition, description, area, photoIds };
+      if (editing) {
+        await updateListing({ id: editing.id, ...values });
+        router.push(ROUTES.tool(editing.id));
+      } else {
+        await createListing(values);
+        setPublished(name.trim());
+      }
+    } catch (error) {
+      if (error instanceof PhotoUploadError) {
+        setFormError(error.message);
+        setServerErrors({ photos: error.message });
+        setTried(true);
+        scrollToField("photos");
+      } else if (error instanceof ConvexError) {
+        const data = error.data as ServerError;
+        const fields = data.fields ?? {};
+        setServerErrors(fields);
+        setFormError(data.message ?? "Couldn’t save. Please try again.");
+        setTried(true);
+        const first = SHARE_FIELD_ORDER.find((k) => fields[k]);
+        if (first) scrollToField(first);
+      } else {
+        setFormError("Couldn’t save. Check your connection and try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const first = SHARE_FIELD_ORDER.find((k) => allErrors[k]);
     if (first) {
       setTried(true);
-      const el = document.querySelector<HTMLElement>(`[data-field="${first}"]`);
-      if (el) {
-        window.scrollTo({
-          top: el.getBoundingClientRect().top + window.scrollY - 100,
-          behavior: "smooth",
-        });
-        const input = el.querySelector<HTMLElement>(
-          "input,select,textarea,button",
-        );
-        if (input && first !== "photos") {
-          setTimeout(() => input.focus({ preventScroll: true }), 350);
-        }
-      }
+      scrollToField(first);
       return;
     }
-    setPublished(name.trim());
+    void save();
   };
 
   const shareAnother = () => {
-    photos.forEach((p) => URL.revokeObjectURL(p.src));
+    photos.forEach((p) => {
+      if (isObjectUrl(p.src)) URL.revokeObjectURL(p.src);
+    });
     setName("");
     setCategory("");
     setCondition("");
     setDescription("");
+    setArea("");
     setPhotos([]);
+    setServerErrors({});
+    setFormError(null);
     setTried(false);
     setPublished(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -169,11 +286,12 @@ export function ShareToolScreen() {
       <RequireAuth>
         <main className="mx-auto box-border max-w-[1440px] px-4 pt-[22px] md:px-8 md:pt-9 xl:px-14">
           <h1 className="m-0 text-[34px] leading-[1.05] font-extrabold tracking-tightest text-forest md:text-[44px]">
-            Share a tool
+            {editing ? "Edit listing" : "Share a tool"}
           </h1>
           <p className="mt-2.5 mb-0 text-[15px] leading-[1.45] text-pretty text-ink-muted md:text-[17px]">
-            Give your belongings a second life by sharing them with your
-            neighbors.
+            {editing
+              ? "Update the details and photos of your item."
+              : "Give your belongings a second life by sharing them with your neighbors."}
           </p>
 
           <div className="mt-5 grid grid-cols-1 items-start gap-7 md:mt-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(360px,1fr)]">
@@ -337,6 +455,40 @@ export function ShareToolScreen() {
                 <FieldError id="f-desc-error" message={errors.description} />
               </div>
 
+              <div data-field="area" className="flex flex-col gap-2.5">
+                <label htmlFor="f-area" className={LABEL}>
+                  Area <Required />
+                </label>
+                <input
+                  id="f-area"
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  maxLength={AREA_MAX}
+                  placeholder="e.g. Patershol, Gent"
+                  autoComplete="off"
+                  aria-invalid={Boolean(errors.area)}
+                  aria-describedby={
+                    errors.area ? "f-area-hint f-area-error" : "f-area-hint"
+                  }
+                  className={cn(INPUT, "px-4", border("area"))}
+                />
+                <span
+                  id="f-area-hint"
+                  className="flex items-start gap-1.5 text-[13.5px] leading-[1.45] text-ink-soft"
+                >
+                  <Icon
+                    name="lock"
+                    size={15}
+                    className="mt-0.5 flex-none"
+                    aria-hidden
+                  />
+                  Neighbourhood and city only. Never your street, house number,
+                  floor or postcode.
+                </span>
+                <FieldError id="f-area-error" message={errors.area} />
+              </div>
+
               <div data-field="photos" className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <span className={LABEL}>
@@ -399,6 +551,7 @@ export function ShareToolScreen() {
                         name={name}
                         description={description}
                         mainPhoto={mainPhoto}
+                        area={area}
                         variant="inline"
                       />
                     </div>
@@ -407,9 +560,18 @@ export function ShareToolScreen() {
                 ) : null}
               </div>
 
+              {formError ? (
+                <p
+                  role="alert"
+                  className="m-0 rounded-field bg-danger-hover-bg px-4 py-3 text-[14.5px] font-semibold text-danger"
+                >
+                  {formError}
+                </p>
+              ) : null}
+
               <div className="flex flex-col-reverse justify-between gap-3 md:flex-row md:border-t md:border-solid md:border-[rgba(47,70,54,.1)] md:pt-6">
                 <ButtonLink
-                  href={ROUTES.explore}
+                  href={editing ? ROUTES.profile : ROUTES.explore}
                   variant="neutral"
                   className="min-h-[50px] px-7 text-base font-semibold"
                 >
@@ -417,10 +579,18 @@ export function ShareToolScreen() {
                 </ButtonLink>
                 <Button
                   type="submit"
+                  disabled={saving}
+                  aria-busy={saving}
                   className="min-h-[52px] gap-2.5 px-8 text-base font-bold"
                 >
                   <Icon name="publish" size={19} strokeWidth={2.2} />
-                  Publish item
+                  {saving
+                    ? editing
+                      ? "Saving…"
+                      : "Publishing…"
+                    : editing
+                      ? "Save changes"
+                      : "Publish item"}
                 </Button>
               </div>
             </form>
@@ -438,6 +608,7 @@ export function ShareToolScreen() {
                 name={name}
                 description={description}
                 mainPhoto={mainPhoto}
+                area={area}
                 variant="side"
               />
               <GoodToKnow variant="side" />

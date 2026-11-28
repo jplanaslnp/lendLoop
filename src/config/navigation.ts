@@ -5,6 +5,7 @@ export const ROUTES = {
   share: "/share",
   profile: "/profile",
   tool: (id: string) => `/tools/${id}`,
+  editListing: (id: string) => `/share/${id}`,
   user: (id: string) => `/users/${id}`,
 } as const;
 

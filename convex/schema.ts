@@ -3,7 +3,8 @@ import { v } from "convex/values";
 
 /**
  * LendLoop data model (docs/05_DATABASE_SCHEMA.md). Phase 4 created every
- * table; Phase 5 reads listings (public and member views). Loans are
+ * table; Phase 5 reads listings (public and member views); Phase 6 lets
+ * members create, edit and archive their own listings with uploaded photos. Loans are
  * implemented from Phase 7 on, and their open lifecycle questions are tracked
  * in docs/DECISIONS.md.
  */
@@ -98,8 +99,11 @@ export default defineSchema({
     status: listingStatusValidator,
     createdAt: v.number(),
     updatedAt: v.number(),
-    /** User uploads, if approved for Phase 6. */
+    /** Uploaded photos in display order (main photo first). */
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
+    /** Set when the owner deletes the listing (status "archived"). */
+    archivedAt: v.optional(v.number()),
+    archivedBy: v.optional(v.id("users")),
     removedAt: v.optional(v.number()),
     removedBy: v.optional(v.id("users")),
     removalReason: v.optional(v.string()),
@@ -111,6 +115,31 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_category_and_status", ["category", "status"])
     .index("by_owner_and_status", ["ownerId", "status"]),
+
+  /**
+   * Every uploaded photo (convex/uploads.ts). A file only reaches storage
+   * after the server checked its owner, size and real image format.
+   * - pending: uploaded, not on a listing yet (deleted after 24 hours)
+   * - attached: shown on `listingId`
+   * - retained: removed from a listing that has loan history; kept
+   */
+  uploads: defineTable({
+    ownerId: v.id("users"),
+    storageId: v.id("_storage"),
+    format: v.union(v.literal("jpeg"), v.literal("png"), v.literal("webp")),
+    size: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("attached"),
+      v.literal("retained"),
+    ),
+    listingId: v.optional(v.id("listings")),
+    createdAt: v.number(),
+  })
+    .index("by_owner_and_status", ["ownerId", "status"])
+    .index("by_status_and_createdAt", ["status", "createdAt"])
+    .index("by_listing", ["listingId"])
+    .index("by_storageId", ["storageId"]),
 
   /** One lifecycle record per request; it becomes the loan once approved. */
   borrowRequests: defineTable({

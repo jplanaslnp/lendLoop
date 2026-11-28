@@ -106,3 +106,25 @@ Known limitations (Phase 5):
 - Seed users live in the same `users` table as real accounts, marked by `seedKey` and a `seed:` clerkId. Future admin screens or user counts must exclude rows with a `seedKey`.
 - `listings.list` returns at most 100 listings (no pagination yet).
 
+## Notes from Phase 6 (listing management)
+Approved by the product owner before implementation:
+- **Create, edit, delete own listings** (`convex/myListings.ts`). The owner is always the signed-in member from the verified Clerk token. Edit and delete work only on the caller's own **active** listings; another user's, archived, removed or seed listings answer "not found" without revealing they exist.
+- **Area field** on the Share form (2–60 characters), stored as `listings.locationLabel` and shown publicly as in Phase 5. The form always shows the hint "Neighbourhood and city only. Never your street, house number, floor or postcode."
+- **Delete = archive.** The record is kept (`status: "archived"`, `archivedAt`, `archivedBy`) for future borrowing history and disappears from Explore, product pages and My listings. Archiving is refused while the item is out on loan. Photos of an archived listing are **kept if the listing ever had a borrow request**, otherwise deleted (this also stops create-and-archive loops from growing storage without limit).
+- **Photos:** 1–4 per listing, JPEG/PNG/WebP, at most 5 MB each, uploaded to Convex Storage.
+- **Brand, Model, Includes and condition note** stay seed-only; the product page shows those rows only when they exist.
+- **Limits:** 25 active listings per user; 20 unpublished (pending) photos per user; unpublished photos are deleted after 24 hours.
+
+How uploads are protected (`convex/uploads.ts`, route `POST /photos` in `convex/http.ts`):
+- There are no pre-signed upload URLs. The browser sends each file to the HTTP endpoint with its Clerk token, and nothing is stored until the server has checked: an enabled member (seed users excluded), the pending-photo limit, the size (declared and actual bytes, max 5 MB) and the **file signature** (JPEG `FF D8 FF`, PNG `89 50 4E 47 0D 0A 1A 0A`, WebP `RIFF…WEBP`). The browser's MIME type and filename are ignored; the file is stored with the detected type, so it is always served as an image.
+- The upload is recorded by a transactional mutation that re-checks membership and the pending limit; a parallel upload that loses the last slot has its file deleted in the same request.
+- Only the uploader can attach a photo, only while it is unattached (or already on that listing when editing). A photo can't be on two listings.
+- Photo lifecycle (`uploads` table): `pending` → `attached` (on a listing) → removed while editing: deleted if the listing never had a borrow request, otherwise `retained`. The daily cron (`convex/crons.ts`) deletes only `pending` uploads older than 24 hours and re-checks that no listing references the file; it never touches `attached` or `retained` photos.
+- Allowed browser origins come from the Convex variable `APP_ORIGINS` (dev: `http://localhost:3000,http://localhost:3100`). It is not set on production yet; set it to the production site when deploying. Authentication is the bearer token, not cookies, so the origin list is defence in depth.
+
+Known limitations (Phase 6):
+- **Area validation is best-effort, not a privacy guarantee.** Convex rejects common address patterns: runs of 3+ digits (postcodes, house numbers), UK/Dutch postcode shapes, decimal numbers and degrees (coordinates), floor/apartment/door/building words, and a street word next to a number ("Veldstraat 12"). Short numbers that are part of a name ("District 9", "Paris 15e") are allowed. An address without street words or long numbers (e.g. "Main 5") cannot be told apart from an area name and passes; the visible hint is the main safeguard. The keyword list in `convex/lib/listingRules.ts` is easy to extend.
+- The signature check proves a file starts like a JPEG/PNG/WebP; it does not decode the whole image. Combined with storing the detected type, a disguised file cannot be served as anything but an image, but a corrupt image may still show as broken.
+- Photos are not resized or compressed; large phone photos (up to 5 MB) are served as uploaded.
+- Other users' profile pages (`/users/[id]`) and the Borrowing/Lending pages still use mock data.
+

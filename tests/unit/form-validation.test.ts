@@ -59,6 +59,7 @@ describe("share a tool validation (UI)", () => {
         category: "",
         condition: "",
         description: "",
+        area: "",
         photoCount: 0,
       }),
     ).toEqual({
@@ -66,6 +67,7 @@ describe("share a tool validation (UI)", () => {
       category: "Choose a category.",
       condition: "Select the condition.",
       description: "Add a short description.",
+      area: "Add the neighbourhood and city.",
       photos: "Add at least one photo.",
     });
   });
@@ -77,10 +79,27 @@ describe("share a tool validation (UI)", () => {
         category: "diy",
         condition: "good",
         description: "Too short",
+        area: "Patershol, Gent",
         photoCount: 1,
       }),
     ).toEqual({
       description: "Add a little more detail (at least 15 characters).",
+    });
+  });
+
+  it("rejects an address as the area and more than 4 photos", () => {
+    expect(
+      validateShareForm({
+        name: "Drill",
+        category: "diy",
+        condition: "good",
+        description: "A good cordless drill.",
+        area: "Veldstraat 12, Gent",
+        photoCount: 5,
+      }),
+    ).toEqual({
+      area: "Use the neighbourhood and city only — no street, number, postcode or floor.",
+      photos: "You can add up to 4 photos.",
     });
   });
 });

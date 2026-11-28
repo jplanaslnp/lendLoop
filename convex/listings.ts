@@ -76,7 +76,7 @@ export function shortDisplayName(name: string): string {
   return initial ? `${first} ${initial}.` : first;
 }
 
-async function availabilityOf(
+export async function availabilityOf(
   ctx: QueryCtx,
   listingId: Id<"listings">,
 ): Promise<"available" | "borrowed"> {
@@ -89,22 +89,39 @@ async function availabilityOf(
     : "available";
 }
 
-function toItem(
+/**
+ * Photo URLs in display order: uploaded photos (Convex storage) or, for
+ * development seed listings, images bundled with the app.
+ */
+export async function photosOf(
+  ctx: QueryCtx,
   listing: Doc<"listings">,
-  availability: "available" | "borrowed",
-): PublicListingCard {
+): Promise<{ src: string; label: string }[]> {
+  if (listing.imageStorageIds?.length) {
+    const photos: { src: string; label: string }[] = [];
+    for (const [i, storageId] of listing.imageStorageIds.entries()) {
+      const src = await ctx.storage.getUrl(storageId);
+      if (src)
+        photos.push({ src, label: i === 0 ? "Main photo" : `Photo ${i + 1}` });
+    }
+    return photos;
+  }
+  return (listing.photos ?? []).map((p) => ({ src: p.path, label: p.label }));
+}
+
+async function toItem(
+  ctx: QueryCtx,
+  listing: Doc<"listings">,
+): Promise<PublicListingCard> {
   return {
     id: listing._id,
     name: listing.name,
     category: listing.category,
     condition: listing.condition,
     description: listing.description,
-    availability,
+    availability: await availabilityOf(ctx, listing._id),
     locationLabel: listing.locationLabel,
-    photos: (listing.photos ?? []).map((p) => ({
-      src: p.path,
-      label: p.label,
-    })),
+    photos: await photosOf(ctx, listing),
   };
 }
 
@@ -153,7 +170,7 @@ export const list = query({
     for (const listing of listings) {
       const owner = await visibleOwner(ctx, listing);
       if (!owner) continue;
-      const item = toItem(listing, await availabilityOf(ctx, listing._id));
+      const item = await toItem(ctx, listing);
       if (member) memberCards.push({ ...item, owner: toOwner(owner) });
       else publicCards.push(item);
     }
@@ -162,7 +179,7 @@ export const list = query({
 });
 
 /** Finds a listing by Convex ID, or by a development seed key. */
-async function findListing(
+export async function findListing(
   ctx: QueryCtx,
   id: string,
 ): Promise<Doc<"listings"> | null> {
@@ -190,7 +207,7 @@ export const get = query({
     if (!owner) return null;
 
     const detail = {
-      ...toItem(listing, await availabilityOf(ctx, listing._id)),
+      ...(await toItem(ctx, listing)),
       longDescription: listing.longDescription ?? null,
       conditionNote: listing.conditionNote ?? null,
       details: listing.details ?? [],

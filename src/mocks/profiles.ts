@@ -3,52 +3,6 @@ import type { PersonId } from "./people";
 
 /** Phase 2 mock profile content, copied from My Profile / User Profile. */
 
-export type MyItem = {
-  id: string;
-  name: string;
-  categoryLabel: string;
-  image: string;
-};
-
-export const MY_ITEMS: readonly MyItem[] = [
-  {
-    id: "drill",
-    name: "Cordless drill",
-    categoryLabel: "DIY & Tools",
-    image: "drill",
-  },
-  {
-    id: "chair",
-    name: "Camping chair",
-    categoryLabel: "Camping & Travel",
-    image: "chair",
-  },
-  {
-    id: "projector",
-    name: "Projector",
-    categoryLabel: "Electronics",
-    image: "projector",
-  },
-  {
-    id: "bike",
-    name: "City bike",
-    categoryLabel: "Sports & Fitness",
-    image: "bike",
-  },
-  {
-    id: "blender",
-    name: "Blender",
-    categoryLabel: "Home & Kitchen",
-    image: "blender",
-  },
-  {
-    id: "games",
-    name: "Board games",
-    categoryLabel: "Books & Games",
-    image: "games",
-  },
-];
-
 export type HistoryRow = {
   name: string;
   image: string;
@@ -136,13 +90,6 @@ export const BORROWING_HISTORY: readonly HistoryRow[] = [
     status: "cancelled",
     dates: "Nov 1 – Nov 3",
   },
-];
-
-/** My items currently out on loan (cannot be removed while on loan). */
-export const ON_LOAN_STATUSES: readonly LoanStatus[] = [
-  "borrowed",
-  "overdue",
-  "returnPending",
 ];
 
 export type PublicProfile = {

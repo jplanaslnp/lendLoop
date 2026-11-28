@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -32,21 +33,21 @@ import {
   type ToolPhoto,
 } from "@/features/listings/types";
 import { cn } from "@/lib/cn";
-import { formatShort, pluralDays } from "@/lib/dates";
+import { addDays, formatShort, parseIsoDate, pluralDays } from "@/lib/dates";
 import {
-  buildBookedSet,
+  bookedFromRanges,
   pickDate,
   rangeLength,
   restoreRange,
   selectableLimit,
   toIsoDate,
+  toRequestDates,
   type DateRange,
 } from "@/lib/dateRange";
 import { useGoBack } from "@/lib/useGoBack";
-// The calendar and request dialog stay mock UI until Phase 7.
-import { MOCK_TODAY } from "@/mocks/people";
-import { MAX_LOAN_DAYS, MOCK_BOOKED_RANGES } from "@/mocks/tools";
+import { browserTimeZone, useLocalToday } from "@/lib/useLocalToday";
 import { api } from "@convex/_generated/api";
+import { ADVANCE_DAYS_MAX, LOAN_DAYS_MAX } from "@convex/lib/requestRules";
 
 import { ProductGallery } from "./ProductGallery";
 
@@ -55,6 +56,17 @@ const PANEL =
 
 /** Query key that resumes an action after a full-page sign-in. */
 const RESUME_INTENT = "intent";
+
+const MAX_LOAN_DAYS = LOAN_DAYS_MAX;
+
+/** "Nov 28 – Nov 30" (or one day) for a stored `[startDate, endDate)`. */
+function storedRangeText(startDate: string, endDate: string): string {
+  const first = parseIsoDate(startDate);
+  const last = addDays(parseIsoDate(endDate), -1);
+  return rangeLength(first, last) === 1
+    ? formatShort(first)
+    : `${formatShort(first)} – ${formatShort(last)}`;
+}
 
 const STEPS = [
   "Send a borrowing request to the owner.",
@@ -82,8 +94,9 @@ function similarTo(
 }
 
 /**
- * Product details from Convex, with date selection and a mock borrow
- * request flow (real requests arrive in Phase 7). `routeId` is the ID in
+ * Product details from Convex, with date selection and borrow requests
+ * (Phase 7). Booked dates and the caller's pending request come from
+ * Convex, which re-validates everything on send. `routeId` is the ID in
  * the URL, kept so resume links point back to the same address.
  */
 export function ProductDetailsScreen({
@@ -98,18 +111,43 @@ export function ProductDetailsScreen({
   const router = useRouter();
   const goBack = useGoBack();
   const toast = useToast(3600);
-  const booked = useMemo(() => buildBookedSet(MOCK_BOOKED_RANGES), []);
   const datesRef = useRef<HTMLDivElement>(null);
+  const today = useLocalToday();
+  const lastStart = today ? addDays(today, ADVANCE_DAYS_MAX) : undefined;
+  const bookedRanges = useQuery(api.borrowRequests.availability, {
+    listingId: tool.id,
+  });
+  const booked = useMemo(
+    () => bookedFromRanges(bookedRanges ?? []),
+    [bookedRanges],
+  );
+  // Whether the caller may request this item, and their pending request.
+  const requestState = useQuery(api.borrowRequests.forListing, {
+    listingId: tool.id,
+  });
+  const createRequest = useMutation(api.borrowRequests.create);
 
   const [range, setRange] = useState<DateRange>({ start: null, end: null });
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [view, setView] = useState({
-    year: MOCK_TODAY.getFullYear(),
-    month: MOCK_TODAY.getMonth(),
-  });
+  const [view, setView] = useState<{ year: number; month: number } | null>(
+    null,
+  );
   const [requestOpen, setRequestOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  // One key per opened dialog: a retried send can't create a second request.
+  const requestKey = useRef("");
+
+  const requestable = requestState?.requestable ?? "yes";
+  const pendingRequest = requestState?.pending.at(-1);
+  const sent = requestable === "yes" && pendingRequest !== undefined;
+  const pendingText = pendingRequest
+    ? storedRangeText(pendingRequest.startDate, pendingRequest.endDate)
+    : "";
+  const shownView =
+    view ??
+    (today ? { year: today.getFullYear(), month: today.getMonth() } : null);
 
   // Convex includes the owner only for signed-in members.
   const owner = ownerOf(tool);
@@ -183,6 +221,12 @@ export function ProductDetailsScreen({
     setCalendarOpen(true);
   };
 
+  const showRequest = () => {
+    requestKey.current = crypto.randomUUID();
+    setRequestError(null);
+    setRequestOpen(true);
+  };
+
   const openRequest = () => {
     if (!start || !end) return;
     // If sign-in leaves the page (Google), this URL brings the visitor back
@@ -192,17 +236,14 @@ export function ProductDetailsScreen({
       from: toIsoDate(start),
       to: toIsoDate(end),
     });
-    requireAuth(
-      () => setRequestOpen(true),
-      `${ROUTES.tool(routeId)}?${resume.toString()}`,
-    );
+    requireAuth(showRequest, `${ROUTES.tool(routeId)}?${resume.toString()}`);
   };
 
   // Resume "Request to borrow" after a sign-in that left the page. Runs once
   // Clerk has loaded, reading the URL written by openRequest above.
   const resumed = useRef(false);
   useEffect(() => {
-    if (!isLoaded || resumed.current) return;
+    if (!isLoaded || !today || resumed.current) return;
     const timer = window.setTimeout(() => {
       resumed.current = true;
       const params = new URLSearchParams(window.location.search);
@@ -211,26 +252,51 @@ export function ProductDetailsScreen({
       const restored = restoreRange(
         params.get("from"),
         params.get("to"),
-        MOCK_TODAY,
+        today,
         MAX_LOAN_DAYS,
         booked,
       );
-      if (!restored) return;
+      if (!restored || (lastStart && restored.start > lastStart)) return;
       setRange(restored);
       setView({
         year: restored.start.getFullYear(),
         month: restored.start.getMonth(),
       });
-      if (isSignedIn) setRequestOpen(true);
+      if (isSignedIn) {
+        requestKey.current = crypto.randomUUID();
+        setRequestOpen(true);
+      }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [isLoaded, isSignedIn, booked, router, routeId]);
+  }, [isLoaded, isSignedIn, today, lastStart, booked, router, routeId]);
 
-  const sendRequest = () => {
-    setRequestOpen(false);
-    setSent(true);
-    setCalendarOpen(false);
-    toast.show(`Request sent · ${ownerFirst} has been notified.`);
+  const sendRequest = async () => {
+    if (!start || !end || sending) return;
+    setSending(true);
+    setRequestError(null);
+    try {
+      await createRequest({
+        listingId: tool.id,
+        ...toRequestDates(start, end),
+        timeZone: browserTimeZone(),
+        message: message.trim() || undefined,
+        idempotencyKey: requestKey.current,
+      });
+      setRequestOpen(false);
+      setCalendarOpen(false);
+      setMessage("");
+      setRange({ start: null, end: null });
+      toast.show("Request sent · waiting for the owner.");
+    } catch (error) {
+      setRequestError(
+        error instanceof ConvexError
+          ? ((error.data as { message?: string }).message ??
+              "Couldn’t send the request. Please try again.")
+          : "Couldn’t send the request. Check your connection and try again.",
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const fieldBorder = calendarOpen
@@ -242,8 +308,8 @@ export function ProductDetailsScreen({
   const requestRange =
     start && end
       ? rangeText +
-        (start.getFullYear() !== MOCK_TODAY.getFullYear() ||
-        end.getFullYear() !== MOCK_TODAY.getFullYear()
+        (start.getFullYear() !== (today ?? start).getFullYear() ||
+        end.getFullYear() !== (today ?? start).getFullYear()
           ? `, ${end.getFullYear()}`
           : "")
       : "";
@@ -490,13 +556,14 @@ export function ProductDetailsScreen({
                   />
                 </button>
 
-                {calendarOpen ? (
+                {calendarOpen && today && shownView ? (
                   <DateRangeCalendar
-                    today={MOCK_TODAY}
+                    today={today}
+                    lastStart={lastStart}
                     booked={booked}
                     maxDays={MAX_LOAN_DAYS}
                     range={range}
-                    view={view}
+                    view={shownView}
                     onViewChange={setView}
                     onPick={onPick}
                     onClear={() => setRange({ start: null, end: null })}
@@ -555,16 +622,16 @@ export function ProductDetailsScreen({
             )}
           >
             <div>
-              {sent ? (
+              {requestable === "own" || requestable === "demo" ? (
+                <NoRequestNote kind={requestable} listingId={tool.id} />
+              ) : sent ? (
                 <>
                   <div className="flex min-h-[58px] items-center justify-center gap-2.5 rounded-full bg-warning-bg text-base font-bold text-warning-fg">
                     <Icon name="clock" size={19} />
                     Request sent · Pending
                   </div>
                   <p className="mt-2.5 mb-0 text-center text-sm text-ink-soft">
-                    {valid
-                      ? `${rangeText} · waiting for ${ownerFirst}.`
-                      : `Waiting for ${ownerFirst}.`}{" "}
+                    {`${pendingText} · waiting for ${ownerFirst}.`}{" "}
                     <Link
                       href={ROUTES.borrowing}
                       onClick={guardLink(ROUTES.borrowing)}
@@ -662,7 +729,9 @@ export function ProductDetailsScreen({
       <SiteFooter />
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-solid border-[rgba(47,70,54,.08)] bg-surface px-4 pt-3 pb-[calc(14px+env(safe-area-inset-bottom))] shadow-mobile-cta md:hidden">
-        {sent ? (
+        {requestable === "own" || requestable === "demo" ? (
+          <NoRequestNote kind={requestable} listingId={tool.id} mobile />
+        ) : sent ? (
           <Link
             href={ROUTES.borrowing}
             onClick={guardLink(ROUTES.borrowing)}
@@ -762,6 +831,14 @@ export function ProductDetailsScreen({
           the exact pickup address, and the loan starts when you confirm
           you&apos;ve collected the item.
         </p>
+        {requestError ? (
+          <p
+            role="alert"
+            className="mt-3.5 mb-0 rounded-field bg-danger-hover-bg px-4 py-3 text-[14.5px] font-semibold text-danger"
+          >
+            {requestError}
+          </p>
+        ) : null}
         <div className="mt-[22px] flex flex-wrap gap-2.5">
           <Button
             variant="neutral"
@@ -771,10 +848,12 @@ export function ProductDetailsScreen({
             Back
           </Button>
           <Button
-            onClick={sendRequest}
+            onClick={() => void sendRequest()}
+            disabled={sending}
+            aria-busy={sending}
             className="min-h-[50px] flex-[1_1_180px] text-[15px] font-bold"
           >
-            Send request
+            {sending ? "Sending…" : "Send request"}
           </Button>
         </div>
       </Dialog>
@@ -784,5 +863,44 @@ export function ProductDetailsScreen({
         className="bottom-[calc(140px+env(safe-area-inset-bottom))] md:bottom-8"
       />
     </div>
+  );
+}
+
+/**
+ * Shown instead of "Request to borrow" on the caller's own listing, and on
+ * development demo items (their fictional owners can't answer requests).
+ */
+function NoRequestNote({
+  kind,
+  listingId,
+  mobile,
+}: {
+  kind: "own" | "demo";
+  listingId: string;
+  mobile?: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={cn(
+          "flex items-center justify-center gap-2.5 rounded-full bg-lavender-soft font-bold text-primary-deep",
+          mobile ? "min-h-[54px] text-base" : "min-h-[58px] text-base",
+        )}
+      >
+        <Icon name="info" size={19} />
+        {kind === "own"
+          ? "This is your listing"
+          : "Demo item · requests are turned off"}
+      </div>
+      <p className="mt-2.5 mb-0 text-center text-sm text-ink-soft">
+        {kind === "own" ? (
+          <Link href={ROUTES.editListing(listingId)} className="font-bold">
+            Edit listing
+          </Link>
+        ) : (
+          "Demo items can’t be borrowed. Try an item shared by a neighbour."
+        )}
+      </p>
+    </>
   );
 }

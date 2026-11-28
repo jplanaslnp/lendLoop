@@ -2,14 +2,14 @@ import type { IconName } from "@/components/ui/Icon";
 import type { TimelineStep } from "@/components/ui/Timeline";
 import { LOAN_STATUS_STYLES } from "@/config/loanStatus";
 import { diffDays, formatShort, parseIsoDate, pluralDays } from "@/lib/dates";
-import { firstName, PEOPLE } from "@/mocks/people";
-import type { LoanStatus, MockRequest } from "@/mocks/requests";
-import { getTool } from "@/mocks/tools";
+import type { LoanStatus } from "@/mocks/requests";
+
+import type { LoanView } from "./requestView";
 
 /**
  * UI presentation of a borrow request (banner, timeline, actions) — copied
- * from the Borrowing/Lending prototype. Pure functions; the lifecycle itself
- * is an open decision (docs/06, docs/DECISIONS.md) and is NOT enforced here.
+ * from the Borrowing/Lending prototype. Pure functions over `LoanView`; the
+ * lifecycle is enforced in Convex, never here.
  */
 
 export type FilterKey =
@@ -70,25 +70,22 @@ const DONE: Partial<Record<LoanStatus, number>> = {
   returned: 5,
 };
 
-export function requestContext(request: MockRequest, today: Date) {
-  const person = PEOPLE[request.personId];
-  const first = firstName(person);
+export function requestContext(request: LoanView, today: Date) {
   const start = parseIsoDate(request.start);
   const end = parseIsoDate(request.end);
-  const tool = getTool(request.itemId);
   return {
-    person,
-    first,
+    person: request.person,
+    first: request.person.first,
     start,
     end,
     endShort: formatShort(end),
     daysLeft: diffDays(today, end),
-    itemName: tool?.name ?? request.itemId,
+    itemName: request.item.name,
     isOwner: request.role === "received",
   };
 }
 
-export function getActions(request: MockRequest, today: Date): RequestAction[] {
+export function getActions(request: LoanView, today: Date): RequestAction[] {
   const { first, isOwner } = requestContext(request, today);
   const a = (
     kind: "primary" | "secondary" | "ghost",
@@ -157,7 +154,7 @@ export function getActions(request: MockRequest, today: Date): RequestAction[] {
   return map[request.status] ?? [];
 }
 
-export function getBanner(request: MockRequest, today: Date): Banner {
+export function getBanner(request: LoanView, today: Date): Banner {
   const { first, isOwner, endShort, daysLeft, itemName } = requestContext(
     request,
     today,
@@ -172,11 +169,20 @@ export function getBanner(request: MockRequest, today: Date): Banner {
   });
   const left = `${pluralDays(daysLeft)} left`;
   const late = `${pluralDays(-daysLeft)} late`;
-  const cancelled = B(
-    "cancelled",
-    `Cancelled by ${by}`,
-    `${request.log.cancelled} · the reserved dates were released.`,
-  );
+  const cancelled =
+    request.cancelReason === "listing_archived"
+      ? B(
+          "cancelled",
+          "Listing removed",
+          "The owner removed this listing, so the request was cancelled.",
+        )
+      : B(
+          "cancelled",
+          `Cancelled by ${by}`,
+          request.previousStatus === "pending" && !isOwner
+            ? `${request.log.cancelled} · the request was withdrawn.`
+            : `${request.log.cancelled} · the reserved dates were released.`,
+        );
 
   if (isOwner) {
     switch (request.status) {
@@ -233,7 +239,7 @@ export function getBanner(request: MockRequest, today: Date): Banner {
       return B(
         "pending",
         "Waiting for approval",
-        `${first} hasn't responded yet. You'll be notified when they do.`,
+        `${first} hasn't responded yet. This page updates as soon as they do.`,
       );
     case "approved":
       return B(
@@ -278,7 +284,7 @@ export function getBanner(request: MockRequest, today: Date): Banner {
   }
 }
 
-export function getTimeline(request: MockRequest, today: Date): TimelineStep[] {
+export function getTimeline(request: LoanView, today: Date): TimelineStep[] {
   const { first, isOwner, endShort } = requestContext(request, today);
   const base = [
     {
@@ -325,8 +331,14 @@ export function getTimeline(request: MockRequest, today: Date): TimelineStep[] {
         kind: "done",
       })),
       {
-        title: `Cancelled by ${request.cancelledBy === "you" ? "you" : first}`,
-        subtitle: `${request.log.cancelled} · dates released`,
+        title:
+          request.cancelReason === "listing_archived"
+            ? "Cancelled · listing removed"
+            : `Cancelled by ${request.cancelledBy === "you" ? "you" : first}`,
+        subtitle:
+          request.previousStatus === "pending" && !isOwner
+            ? request.log.cancelled
+            : `${request.log.cancelled} · dates released`,
         kind: "cancelled",
       },
     ];
@@ -367,7 +379,7 @@ export function getTimeline(request: MockRequest, today: Date): TimelineStep[] {
 }
 
 /** "Needs your action" hint shown on list cards. */
-export function getNeedsHint(request: MockRequest): string | null {
+export function getNeedsHint(request: LoanView): string | null {
   if (request.role === "received") {
     const map: Partial<Record<LoanStatus, string>> = {
       pending: "Respond to request",
@@ -385,7 +397,7 @@ export function getNeedsHint(request: MockRequest): string | null {
 
 /** Status change + timeline log key applied by each mock action. */
 export const ACTION_TRANSITIONS: Partial<
-  Record<ActionType, { status: LoanStatus; logKey: keyof MockRequest["log"] }>
+  Record<ActionType, { status: LoanStatus; logKey: keyof LoanView["log"] }>
 > = {
   approve: { status: "approved", logKey: "approved" },
   decline: { status: "declined", logKey: "declined" },

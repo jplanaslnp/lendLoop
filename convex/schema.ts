@@ -4,9 +4,9 @@ import { v } from "convex/values";
 /**
  * LendLoop data model (docs/05_DATABASE_SCHEMA.md). Phase 4 created every
  * table; Phase 5 reads listings (public and member views); Phase 6 lets
- * members create, edit and archive their own listings with uploaded photos. Loans are
- * implemented from Phase 7 on, and their open lifecycle questions are tracked
- * in docs/DECISIONS.md.
+ * members create, edit and archive their own listings with uploaded photos;
+ * Phase 7 creates pending borrow requests. Approval and the rest of the loan
+ * lifecycle come in Phase 8 (docs/DECISIONS.md).
  */
 
 export const roleValidator = v.union(v.literal("user"), v.literal("admin"));
@@ -147,9 +147,16 @@ export default defineSchema({
     /** Derived from the listing at creation, never from client input. */
     ownerId: v.id("users"),
     borrowerId: v.id("users"),
-    /** `YYYY-MM-DD`; end-date semantics are an open decision (docs/06). */
+    /**
+     * Half-open range of calendar days `[startDate, endDate)`, `YYYY-MM-DD`:
+     * `endDate` is the day after the last day of use (Phase 7).
+     */
     startDate: v.string(),
     endDate: v.string(),
+    /** Borrower's declared IANA time zone (canonical), for date rules. */
+    timeZone: v.optional(v.string()),
+    /** Optional plain-text note to the owner (max 200 characters). */
+    message: v.optional(v.string()),
     status: borrowStatusValidator,
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -161,6 +168,8 @@ export default defineSchema({
     cancelledAt: v.optional(v.number()),
     dueAt: v.optional(v.number()),
     cancelledBy: v.optional(v.id("users")),
+    /** Set when the system cancelled the request, not a person. */
+    cancelReason: v.optional(v.literal("listing_archived")),
     declineReason: v.optional(v.string()),
     idempotencyKey: v.optional(v.string()),
   })

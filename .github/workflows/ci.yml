@@ -9,13 +9,16 @@ permissions:
   contents: read
 
 # Clerk keys for the build and e2e server (repository secrets, never logged).
-# The optional E2E_CLERK_* pair enables the real sign-in tests.
+# The optional E2E_CLERK_USER_* / E2E_CLERK_OWNER_* pairs enable the real
+# sign-in, listing and borrowing tests.
 env:
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
   CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
   NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
   E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
   E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+  E2E_CLERK_OWNER_EMAIL: ${{ secrets.E2E_CLERK_OWNER_EMAIL }}
+  E2E_CLERK_OWNER_PASSWORD: ${{ secrets.E2E_CLERK_OWNER_PASSWORD }}
 
 concurrency:
   group: ci-${{ github.ref }}

@@ -32,17 +32,6 @@ const photo = (file: string, label = "Main photo"): ToolPhoto => ({
   label,
 });
 
-/** Loans can last up to this many days (design: "Max. loan · Up to 7 days"). */
-export const MAX_LOAN_DAYS = 7;
-
-/** Booked ranges from the design calendar (inclusive, YYYY-MM-DD). */
-export const MOCK_BOOKED_RANGES: readonly (readonly [string, string])[] = [
-  ["2026-11-28", "2026-11-30"],
-  ["2026-12-08", "2026-12-10"],
-  ["2026-12-18", "2026-12-21"],
-  ["2027-01-04", "2027-01-06"],
-];
-
 export const TOOLS: readonly MockTool[] = [
   {
     id: "projector",

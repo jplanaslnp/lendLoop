@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { LoansScreen } from "@/features/loans/LoansScreen";
+import { BorrowingScreen } from "@/features/loans/LoanPages";
 
 export const metadata: Metadata = {
   title: "Borrowing",
@@ -14,5 +14,5 @@ export const metadata: Metadata = {
 export const instant = false;
 
 export default function BorrowingPage() {
-  return <LoansScreen role="sent" />;
+  return <BorrowingScreen />;
 }

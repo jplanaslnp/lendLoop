@@ -79,3 +79,9 @@ export function formatRangeWithYear(start: Date, end: Date): string {
 export function pluralDays(count: number): string {
   return `${count} day${count === 1 ? "" : "s"}`;
 }
+
+/** Timeline time like the design: "Today · 09:40" or "Nov 24 · 10:24". */
+export function formatLogTime(date: Date, now: Date): string {
+  const hm = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `${isSameDay(date, now) ? "Today" : formatShort(date)} · ${hm}`;
+}

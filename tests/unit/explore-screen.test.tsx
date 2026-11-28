@@ -60,9 +60,16 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+const mockClerk = vi.hoisted(() => ({
+  signOut: vi.fn(),
+  loaded: true,
+  addListener: () => () => {},
+}));
+
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({ isLoaded: true, isSignedIn: clerkState.isSignedIn }),
-  useClerk: () => ({ signOut: vi.fn() }),
+  // Clerk's browser script has loaded (see AuthProvider's session check).
+  useClerk: () => mockClerk,
   useUser: () => ({ isLoaded: true, user: null }),
   useSignIn: () => ({
     signIn: { password: signInPassword, status: "needs_identifier" },

@@ -8,11 +8,13 @@
  * @module
  */
 
+import type * as borrowRequests from "../borrowRequests.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_imageFormat from "../lib/imageFormat.js";
 import type * as lib_listingRules from "../lib/listingRules.js";
+import type * as lib_requestRules from "../lib/requestRules.js";
 import type * as listings from "../listings.js";
 import type * as myListings from "../myListings.js";
 import type * as seed from "../seed.js";
@@ -27,11 +29,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  borrowRequests: typeof borrowRequests;
   crons: typeof crons;
   http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/imageFormat": typeof lib_imageFormat;
   "lib/listingRules": typeof lib_listingRules;
+  "lib/requestRules": typeof lib_requestRules;
   listings: typeof listings;
   myListings: typeof myListings;
   seed: typeof seed;

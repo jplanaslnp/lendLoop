@@ -1,27 +1,51 @@
 import { Icon } from "@/components/ui/Icon";
+import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { LoanStatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
 import { formatRangeWithYear, formatShort } from "@/lib/dates";
-import { avatarSrc } from "@/mocks/people";
-import type { MockRequest } from "@/mocks/requests";
 
 import { getNeedsHint, requestContext } from "./loanPresentation";
+import type { LoanView } from "./requestView";
 
 type RequestCardProps = {
-  request: MockRequest;
+  request: LoanView;
   today: Date;
   selected: boolean;
   onSelect: () => void;
 };
 
-function Thumb({ itemId, className }: { itemId: string; className: string }) {
+function Thumb({
+  photo,
+  className,
+}: {
+  photo: string | null;
+  className: string;
+}) {
   return (
     <div className={cn("overflow-hidden rounded-field bg-image", className)}>
       <div
         className="size-full bg-cover bg-center"
-        style={{ backgroundImage: `url(/images/tools/${itemId}.jpg)` }}
+        style={photo ? { backgroundImage: `url(${photo})` } : undefined}
       />
     </div>
+  );
+}
+
+/** The person's photo, or the shared initial avatar when there is none. */
+function Face({
+  request,
+  className,
+  size,
+}: {
+  request: LoanView;
+  className: string;
+  size: number;
+}) {
+  const { avatar, shortName } = request.person;
+  return avatar ? (
+    <span className={className} style={{ backgroundImage: `url(${avatar})` }} />
+  ) : (
+    <PersonAvatar name={shortName} imageUrl={null} size={size} />
   );
 }
 
@@ -31,16 +55,17 @@ function Person({
   building,
   wide,
 }: {
-  request: MockRequest;
+  request: LoanView;
   name: string;
   building: string;
   wide: boolean;
 }) {
   return wide ? (
     <div className="flex items-center gap-2.5 text-[15px] text-forest">
-      <span
+      <Face
+        request={request}
+        size={28}
         className="size-7 flex-none rounded-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${avatarSrc(request.personId)})` }}
       />
       <span className="font-medium">{name}</span>
       <span className="flex items-center gap-1.5 text-ink-muted">
@@ -50,9 +75,10 @@ function Person({
     </div>
   ) : (
     <div className="flex min-w-0 items-center gap-[7px] text-[13px] text-forest">
-      <span
+      <Face
+        request={request}
+        size={22}
         className="size-[22px] flex-none rounded-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${avatarSrc(request.personId)})` }}
       />
       <span className="font-semibold whitespace-nowrap">{name}</span>
       <span className="whitespace-nowrap text-ink-muted">· {building}</span>
@@ -86,7 +112,7 @@ export function RequestCard({
             : "border-[rgba(47,70,54,.07)]",
         )}
       >
-        <Thumb itemId={request.itemId} className="aspect-[4/3]" />
+        <Thumb photo={request.item.photo} className="aspect-[4/3]" />
         <div className="flex min-w-0 flex-col gap-[9px]">
           <div className="flex items-center justify-between gap-3">
             <span className="truncate text-xl font-bold tracking-tight text-forest">
@@ -100,7 +126,7 @@ export function RequestCard({
           <Person
             request={request}
             name={person.shortName}
-            building={person.building}
+            building={person.place}
             wide
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -127,7 +153,7 @@ export function RequestCard({
         onClick={onSelect}
         className="box-border grid w-full grid-cols-[96px_minmax(0,1fr)_18px] items-center gap-3.5 rounded-card border border-solid border-[rgba(47,70,54,.07)] bg-surface py-2.5 pr-3 pl-2.5 text-left shadow-[0_1px_2px_rgba(47,70,54,.04),0_8px_22px_-12px_rgba(47,70,54,.16)] md:hidden"
       >
-        <Thumb itemId={request.itemId} className="size-24" />
+        <Thumb photo={request.item.photo} className="size-24" />
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex">
             <LoanStatusBadge
@@ -142,7 +168,7 @@ export function RequestCard({
           <Person
             request={request}
             name={person.shortName}
-            building={person.building}
+            building={person.place}
             wide={false}
           />
           <span className="flex items-center gap-1.5 text-[13px] text-ink-link">

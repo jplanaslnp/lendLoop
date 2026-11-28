@@ -20,18 +20,14 @@ import { ROUTES } from "@/config/navigation";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { cn } from "@/lib/cn";
 import { formatShort } from "@/lib/dates";
-import { MOCK_CURRENT_USER, MOCK_TODAY } from "@/mocks/people";
+import { MOCK_CURRENT_USER } from "@/mocks/people";
 import {
   MOCK_OWNER_PICKUP_DETAIL,
   MOCK_PICKUP_NOTE,
-  MOCK_REQUESTS,
-  type MockRequest,
   type RequestRole,
 } from "@/mocks/requests";
 
 import {
-  ACTION_TRANSITIONS,
-  actionToast,
   FILTERS,
   requestContext,
   type ActionType,
@@ -39,6 +35,7 @@ import {
 } from "./loanPresentation";
 import { RequestCard } from "./RequestCard";
 import { RequestDetail } from "./RequestDetail";
+import type { LoanView } from "./requestView";
 
 const COPY = {
   sent: {
@@ -74,64 +71,57 @@ const CHIP_LABEL: Record<Exclude<FilterKey, "active">, string> = {
   cancelled: "Cancelled",
 };
 
-function nowLabel(): string {
-  const d = new Date();
-  return `Today · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 type ModalState = { kind: "cancel" | "address"; id: string } | null;
 
+/**
+ * Where a screen's requests come from: Convex for Borrowing (Phase 7), the
+ * Phase 2 mock for Lending (until Phase 8). See LoanPages.tsx.
+ */
+export type LoansData = {
+  /** Undefined while loading. */
+  requests: readonly LoanView[] | undefined;
+  today: Date;
+  /** Actions this screen supports; others are not offered. All if unset. */
+  allowedActions?: ReadonlySet<ActionType>;
+  /** Runs a status action; returns the toast to show, if any. */
+  onAction: (request: LoanView, type: ActionType) => string | null;
+  /** Cancels a request; resolves to the toast, rejects with a message. */
+  cancel: (request: LoanView) => Promise<string>;
+};
+
 /** Borrowing (requests you sent) and Lending (requests you received). */
-export function LoansScreen({ role }: { role: RequestRole }) {
+export function LoansScreen({
+  role,
+  data,
+}: {
+  role: RequestRole;
+  data: LoansData;
+}) {
   const copy = COPY[role];
   const router = useRouter();
   const toast = useToast(3800);
-  const [requests, setRequests] = useState<MockRequest[]>(() =>
-    MOCK_REQUESTS.filter((r) => r.role === role).map((r) => ({
-      ...r,
-      log: { ...r.log },
-    })),
-  );
+  const requests = data.requests ?? [];
+  const today = data.today;
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [selectedId, setSelectedId] = useState(requests[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const statuses = FILTERS[filter];
   const rows = requests.filter((r) => !statuses || statuses.includes(r.status));
   const current = requests.find((r) => r.id === selectedId) ?? requests[0];
 
-  const update = (
-    id: string,
-    patch: Partial<MockRequest>,
-    logKey?: keyof MockRequest["log"],
-  ) =>
-    setRequests((list) =>
-      list.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              ...patch,
-              log: logKey ? { ...r.log, [logKey]: nowLabel() } : r.log,
-            }
-          : r,
-      ),
-    );
-
-  const onAction = (request: MockRequest, type: ActionType) => {
-    const { first } = requestContext(request, MOCK_TODAY);
+  const onAction = (request: LoanView, type: ActionType) => {
     if (type === "details") {
-      router.push(ROUTES.tool(request.itemId));
+      router.push(ROUTES.tool(request.item.routeId));
       return;
     }
     if (type === "address" || type === "cancel") {
       setModal({ kind: type, id: request.id });
       return;
     }
-    const transition = ACTION_TRANSITIONS[type];
-    if (transition)
-      update(request.id, { status: transition.status }, transition.logKey);
-    const message = actionToast(type, first);
+    const message = data.onAction(request, type);
     if (message) toast.show(message);
   };
 
@@ -139,22 +129,21 @@ export function LoansScreen({ role }: { role: RequestRole }) {
     ? requests.find((r) => r.id === modal.id)
     : undefined;
 
-  const confirmCancel = () => {
-    if (!modalRequest) return;
-    const { first } = requestContext(modalRequest, MOCK_TODAY);
-    update(
-      modalRequest.id,
-      {
-        status: "cancelled",
-        previousStatus: modalRequest.status,
-        cancelledBy: "you",
-      },
-      "cancelled",
-    );
-    setModal(null);
-    toast.show(
-      `Cancelled · ${first} has been notified and the dates were released.`,
-    );
+  const confirmCancel = async () => {
+    if (!modalRequest || cancelling) return;
+    setCancelling(true);
+    try {
+      toast.show(await data.cancel(modalRequest));
+    } catch (error) {
+      toast.show(
+        error instanceof Error
+          ? error.message
+          : "Couldn’t cancel. Please try again.",
+      );
+    } finally {
+      setCancelling(false);
+      setModal(null);
+    }
   };
 
   return (
@@ -230,11 +219,19 @@ export function LoansScreen({ role }: { role: RequestRole }) {
                 open ? "hidden lg:flex" : "flex",
               )}
             >
+              {data.requests === undefined ? (
+                <p
+                  role="status"
+                  className="m-0 py-10 text-center text-ink-soft"
+                >
+                  Loading your requests…
+                </p>
+              ) : null}
               {rows.map((request) => (
                 <RequestCard
                   key={request.id}
                   request={request}
-                  today={MOCK_TODAY}
+                  today={today}
                   selected={request.id === current?.id}
                   onSelect={() => {
                     setSelectedId(request.id);
@@ -242,7 +239,7 @@ export function LoansScreen({ role }: { role: RequestRole }) {
                   }}
                 />
               ))}
-              {rows.length === 0 ? (
+              {data.requests !== undefined && rows.length === 0 ? (
                 <EmptyState
                   title="No requests here"
                   description="Requests with this status will show up in this list."
@@ -257,8 +254,9 @@ export function LoansScreen({ role }: { role: RequestRole }) {
               <div className={open ? "min-w-0" : "hidden min-w-0 lg:block"}>
                 <RequestDetail
                   request={current}
-                  today={MOCK_TODAY}
+                  today={today}
                   onAction={(type) => onAction(current, type)}
+                  allowedActions={data.allowedActions}
                 />
               </div>
             ) : null}
@@ -277,8 +275,10 @@ export function LoansScreen({ role }: { role: RequestRole }) {
           <LoanModalContent
             kind={modal.kind}
             request={modalRequest}
+            today={today}
+            busy={cancelling}
             onClose={() => setModal(null)}
-            onConfirmCancel={confirmCancel}
+            onConfirmCancel={() => void confirmCancel()}
           />
         ) : null}
       </Dialog>
@@ -294,17 +294,21 @@ export function LoansScreen({ role }: { role: RequestRole }) {
 function LoanModalContent({
   kind,
   request,
+  today,
+  busy,
   onClose,
   onConfirmCancel,
 }: {
   kind: "cancel" | "address";
-  request: MockRequest;
+  request: LoanView;
+  today: Date;
+  busy: boolean;
   onClose: () => void;
   onConfirmCancel: () => void;
 }) {
   const { first, start, end, person, itemName } = requestContext(
     request,
-    MOCK_TODAY,
+    today,
   );
   const isLoan = request.role === "received" && request.status !== "pending";
   const range = `${formatShort(start)} – ${formatShort(end)}`;
@@ -332,7 +336,9 @@ function LoanModalContent({
       </h3>
       <p className="mt-2.5 mb-0 text-[15px] leading-normal text-pretty text-ink-muted">
         {kind === "cancel"
-          ? `${first} will be notified and ${range} will be released for other neighbours. The request stays in your history.`
+          ? request.role === "sent" && request.status === "pending"
+            ? `Your request for ${range} will be withdrawn. It stays in your history.`
+            : `${first} will be notified and ${range} will be released for other neighbours. The request stays in your history.`
           : request.role === "sent"
             ? `Collect the ${item} from ${first} on ${formatShort(start)}.`
             : `${first} will collect the ${item} from you on ${formatShort(start)}.`}
@@ -341,7 +347,7 @@ function LoanModalContent({
         <div className="mt-4 rounded-[14px] border border-solid border-[rgba(47,70,54,.08)] bg-hover-sage p-4">
           <div className="text-base font-bold text-forest">
             {request.role === "sent"
-              ? `${person.building} · ${MOCK_OWNER_PICKUP_DETAIL}`
+              ? `${person.place} · ${MOCK_OWNER_PICKUP_DETAIL}`
               : MOCK_CURRENT_USER.address}
           </div>
           <div className="mt-1 text-sm text-ink-muted">{MOCK_PICKUP_NOTE}</div>
@@ -359,6 +365,7 @@ function LoanModalContent({
           <Button
             variant="danger"
             onClick={onConfirmCancel}
+            disabled={busy}
             className="min-h-[50px] flex-[1_1_160px] text-[15px] font-bold"
           >
             {isLoan ? "Yes, cancel loan" : "Yes, cancel request"}

@@ -20,9 +20,9 @@ Record decisions that affect product behavior, schema, security or architecture.
 - [ ] Confirm if Share your tool design brand is replaced fully by LendLoop (recommended: yes).
 - [ ] Confirm image upload is required in v1.
 - [ ] Confirm pickup/return two-step lifecycle vs simple one-step “mark returned”.
-- [ ] Confirm inclusive/exclusive date range semantics.
-- [ ] Confirm pending requests may overlap.
-- [ ] Confirm cancellation and extension policies.
+- [x] (Phase 7: half-open `[startDate, endDate)`) Confirm inclusive/exclusive date range semantics.
+- [x] (Phase 7: yes; only approved/active loans hold dates) Confirm pending requests may overlap.
+- [ ] Confirm cancellation and extension policies. (Phase 7: borrowers may cancel their own **pending** requests; everything else is open.)
 - [ ] Confirm exact owner details shown to borrower and at what status.
 - [ ] Confirm notification channel for evaluation (mock, email, Slack or Discord).
 - [ ] Confirm whether admins need a dedicated dashboard in the evaluation.
@@ -34,7 +34,7 @@ Recorded during Phase 1. These describe differences between the design export (`
 - [x] (Phase 5) Public product detail page: in the design, logged-out visitors can open product details (owner hidden behind "Sign in to see who is sharing this item"). Is a public detail page allowed, and with which fields?
 - [x] (Phase 5: the design's 10 categories) Category list: the design uses Home & Kitchen, Garden & Outdoor, Sports & Fitness, Camping & Travel, Electronics, Cleaning, DIY & Tools, Baby & Kids, Books & Games (and Party & Events in Share a Tool). docs/02 suggests Power tools, Garden, Kitchen, Camping, Sports & fitness, Electronics, Cleaning, DIY & tools, Party & events, Baby & kids, Books & games, Other. Which list is final?
 - [ ] Extra listing fields in the design (Brand, Model, Includes, up to 4 photos) are not in the requirements. Are any of them in v1 scope?
-- [ ] Maximum loan length: Product Details shows "Max. loan: Up to 7 days". Is there a maximum, and is it global or set per listing?
+- [x] (Phase 7: 7 days, global) Maximum loan length: Product Details shows "Max. loan: Up to 7 days". Is there a maximum, and is it global or set per listing?
 - [ ] Sign-up address field: the Auth Modal collects "Building, floor, neighbourhood" at sign-up. Should it be collected, when, and how much of it (data minimisation, docs/10)? It is also not a native Clerk sign-up field.
 - [ ] Auth modal features: the design includes "Forgot your password?", a Terms/Privacy acceptance checkbox and Google sign-in. Confirm these match the Clerk configuration (Email + Google).
 - [ ] Loan status vocabulary: the design uses pending, approved, ready (for pickup), borrowed, overdue, return pending, returned, declined and cancelled, with cancellation by either party after approval. Confirm this matches the lifecycle in docs/06 (this overlaps with the pickup/return and cancellation items above).
@@ -128,3 +128,39 @@ Known limitations (Phase 6):
 - Photos are not resized or compressed; large phone photos (up to 5 MB) are served as uploaded.
 - Other users' profile pages (`/users/[id]`) and the Borrowing/Lending pages still use mock data.
 
+## Notes from Phase 7 (borrow requests and availability)
+Approved by the product owner before implementation:
+- **Request flow** (`convex/borrowRequests.ts`): a signed-in member picks dates on the product page and sends a request, which creates a `pending` record. The borrower comes from the verified Clerk token and the owner is copied from the listing; neither is ever an argument. Owners can't request their own listing ("This is your listing" + Edit listing replaces the button). Archived, removed, unknown listings and listings of disabled owners answer "not found".
+- **Demo listings are not requestable.** Listings with a `seedKey`, or whose owner is a seed user, are refused (`UNAVAILABLE`): their fictional owners can't sign in to answer. The product page shows "Demo item · requests are turned off". Seed data exists only in development.
+- **Date model:** half-open `[startDate, endDate)` of calendar days stored as `YYYY-MM-DD`; `endDate` is the day after the last day of use. No timestamps represent local midnight. Loans last 1–7 days and start between today and today + 90 days.
+- **Availability:** only `approved`, `ready_for_pickup`, `borrowed`, `overdue` and `return_pending` hold dates. Pending requests don't, so several neighbours may ask for the same dates; the owner chooses in Phase 8. A borrower can't have two open requests overlapping on the same listing (`DUPLICATE`). The public `availability` query returns booked dates only (no borrower, status or IDs).
+- **Limits:** at most 20 open (pending) requests per borrower; optional plain-text message up to 200 characters, visible only to the borrower and that listing's owner (the owner's view arrives in Phase 8).
+- **Cancel:** the borrower may cancel their own `pending` request only. Archiving a listing cancels its pending requests in the same transaction (`cancelledBy` = owner, `cancelReason: "listing_archived"`); the borrower sees "Listing removed".
+- **No notifications yet** (Phase 10). The product page says "Request sent · waiting for the owner.", and Borrowing copy no longer promises notifications.
+- **Lending stays mock** until Phase 8. Borrowing (`/borrowing`) reads `borrowRequests.mine` and offers only "See Product Details" and "Cancel Request"; the owner is shown as in Explore ("Marc S." and the area), never a building or address.
+
+Time-zone policy:
+- "Today" is the borrower's **local calendar date**. The browser sends its IANA time zone (`Intl.DateTimeFormat().resolvedOptions().timeZone`) as the borrower's **declared** calendar zone. Convex accepts only IANA-shaped names (no `+02:00` offsets) that its `Intl` runtime knows, stores the canonical name (`Asia/Kolkata` → `Asia/Calcutta`) on the request (`timeZone`), and computes today from **its own clock** in that zone. All date and duration checks run on the server (`convex/lib/requestRules.ts`).
+- The time zone is **not** a verified location or identity, and it grants nothing else. A user can technically declare a different valid zone. Every real zone is within UTC−12…UTC+14, so this shifts "today" by at most about a day either way and never allows a date that has already ended everywhere; the 90-day and 7-day limits are counted from that same server-computed date.
+- Daylight-saving changes can't shift ranges: day arithmetic uses UTC day numbers, and the only instant-to-date conversion is "today in this zone" through `Intl`. Verified on the Convex dev runtime before implementation (DST in Brussels and New York, UTC+14/−12, +5:45, Lord Howe).
+
+Concurrency and Phase 8:
+- `create` reads every request of the listing (`by_listing`) and inserts in the same mutation. Convex mutations are serializable: if another request on that listing commits first, the mutation is retried and re-checks. `findBlockingConflict(ctx, listingId, start, end, excludeId)` is the same check for Phase 8's approval, which must call it inside the approving mutation.
+- Each send carries a client `idempotencyKey` (one per opened dialog); a retry with the same key returns the existing request instead of creating another.
+- [ ] Phase 8: archiving is refused only while an item is borrowed/overdue/return-pending. It should also be refused (or defined) for `approved` and `ready_for_pickup`, which can't exist before Phase 8.
+
+E2E tests:
+- `tests/e2e/borrowing.spec.ts` uses two Clerk development test users: `E2E_CLERK_USER_*` (borrower) and `E2E_CLERK_OWNER_*` (owner, created manually in the Clerk dashboard). Credentials come from the local environment only; the test skips when any is missing. It never touches the demo listings and archives the listing it creates.
+
+Known limitations (Phase 7):
+- `convex-test` runs mutations one after another, so the parallel-request tests check outcomes, not Convex's internal retry; the retry itself is Convex's transaction guarantee.
+- `borrowRequests.mine` returns the latest 100 requests (no pagination yet).
+- E2E runs leave archived test listings and cancelled test requests in the dev deployment.
+
+Open issue (Phase 7): signed-in member briefly treated as signed out after a page load
+- **Symptom:** `tests/e2e/borrowing.spec.ts` fails (desktop and mobile) at the second "Send request" (line ~254): the "Confirm your request" dialog never opens because the LendLoop sign-in modal ("Welcome back") opens instead.
+- **Root cause (observed with an instrumented run):** after a full page load, a member whose short-lived Clerk session token has expired gets a server render that reports Clerk as loaded and **signed out** (`useAuth().isLoaded === true`, `isSignedIn === false`) while Clerk's browser script is still loading. About 500 ms later the script refreshes the token and reports the member as signed in, but a click on "Request to borrow" in that window was already treated as a guest's: `requireAuth` opened the sign-in modal, which then stays open. Real users who return to a page after the token expired and click quickly hit the same thing. Captured state: before the click `clerkLoaded: false`, header signed out; right after the click the "Welcome back" dialog; 500 ms later `clerkLoaded: true`, signed in as the borrower, modal still open. No console errors.
+- **Affected files:** `src/features/auth/AuthProvider.tsx` (`requireAuth`, `guardLink`); surfaced by `src/features/tools/ProductDetailsScreen.tsx` (Request to borrow).
+- **Reproduce:** sign in as a member; stay idle until the session token expires (about a minute); do a full page load of another member's `/tools/<id>`; pick dates and click "Request to borrow" within the first half-second. The sign-in modal opens instead of "Confirm your request". The e2e test reproduces it reliably because it navigates and clicks immediately after a long flow.
+- **Fix applied (approved option B), limited to `requireAuth` and `guardLink`:** both now treat Clerk as ready only when its browser script has loaded and confirmed the session (`useClerk().loaded`, observed through `clerk.addListener`), not from the server render. A `requireAuth` click before that is held and resolved once Clerk confirms: members get the action, genuine guests get the sign-in modal. `guardLink` lets links through until then (proxy.ts still gates account pages). Sign-in, sign-out, the sign-in gate and protected-page redirects are unchanged.
+- **Status:** covered by `tests/unit/require-auth.test.tsx` (7 tests, including the exact scenario: server reports signed out → browser script loads → member confirmed → the request dialog opens, never the sign-in modal; genuine guests still get the modal). 4 of these fail against the original Phase 3 code and all pass with the fix. **Not yet confirmed end to end:** the borrowing e2e test has not completed a passing run with the fix (the last run was stopped before it finished). Next step: run `tests/e2e/borrowing.spec.ts` once on desktop, then mobile, then the full suite.

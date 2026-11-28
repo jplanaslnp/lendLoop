@@ -7,6 +7,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { cancelPendingForArchivedListing } from "./borrowRequests";
 import { availabilityOf, findListing } from "./listings";
 import { requireUser } from "./lib/auth";
 import {
@@ -243,7 +244,8 @@ export const update = mutation({
 /**
  * "Delete" for owners: the listing is archived, never erased, and vanishes
  * from Explore, product pages and My listings. Its photos are kept if the
- * listing ever had a borrow request (history), otherwise deleted.
+ * listing ever had a borrow request (history), otherwise deleted. Pending
+ * requests on it are cancelled with reason `listing_archived` (Phase 7).
  */
 export const archive = mutation({
   args: { id: v.id("listings") },
@@ -268,6 +270,7 @@ export const archive = mutation({
     });
     if (!keepPhotos)
       await releasePhotos(ctx, id, await attachedPhotos(ctx, id));
+    await cancelPendingForArchivedListing(ctx, id, owner._id, now);
     return null;
   },
 });

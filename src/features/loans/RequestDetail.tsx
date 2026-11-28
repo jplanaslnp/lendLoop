@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Icon } from "@/components/ui/Icon";
 import { MapPreview } from "@/components/ui/MapPreview";
+import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { LoanStatusBadge } from "@/components/ui/StatusBadge";
 import { Timeline } from "@/components/ui/Timeline";
 import { LOAN_STATUS_STYLES } from "@/config/loanStatus";
@@ -9,8 +10,6 @@ import { ROUTES } from "@/config/navigation";
 import { cn } from "@/lib/cn";
 import { formatRangeWithYear, pluralDays } from "@/lib/dates";
 import { rangeLength } from "@/lib/dateRange";
-import { avatarSrc } from "@/mocks/people";
-import type { MockRequest } from "@/mocks/requests";
 
 import {
   getActions,
@@ -19,11 +18,14 @@ import {
   requestContext,
   type ActionType,
 } from "./loanPresentation";
+import type { LoanView } from "./requestView";
 
 type RequestDetailProps = {
-  request: MockRequest;
+  request: LoanView;
   today: Date;
   onAction: (type: ActionType) => void;
+  /** Actions that work on this screen (others are not offered yet). */
+  allowedActions?: ReadonlySet<ActionType>;
 };
 
 /** Request/loan detail panel (sticky on ≥1000px, full screen on mobile). */
@@ -31,6 +33,7 @@ export function RequestDetail({
   request,
   today,
   onAction,
+  allowedActions,
 }: RequestDetailProps) {
   const { person, start, end, itemName, isOwner } = requestContext(
     request,
@@ -38,8 +41,10 @@ export function RequestDetail({
   );
   const banner = getBanner(request, today);
   const bannerStyle = LOAN_STATUS_STYLES[banner.status];
-  const actions = getActions(request, today);
-  const place = `${person.building} · Gent`;
+  const actions = getActions(request, today).filter(
+    (a) => !allowedActions || (a.kind !== "info" && allowedActions.has(a.type)),
+  );
+  const place = person.pickupArea;
   const earlyStatus = ["pending", "declined", "cancelled"].includes(
     request.status,
   );
@@ -52,9 +57,11 @@ export function RequestDetail({
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-image md:aspect-[16/9]">
         <span
           className="block size-full bg-cover bg-center"
-          style={{
-            backgroundImage: `url(/images/tools/${request.itemId}.jpg)`,
-          }}
+          style={
+            request.item.photo
+              ? { backgroundImage: `url(${request.item.photo})` }
+              : undefined
+          }
           role="img"
           aria-label={itemName}
         />
@@ -81,17 +88,21 @@ export function RequestDetail({
 
         <div className="border-b border-solid border-[rgba(47,70,54,.1)] py-4">
           <Link
-            href={ROUTES.user(person.id)}
+            href={ROUTES.user(person.profileId)}
             className="flex items-center gap-3.5 text-forest hover:text-forest"
           >
-            <span
-              className="block size-[52px] flex-none rounded-full bg-cover bg-center shadow-[0_2px_8px_-3px_rgba(47,70,54,.3)]"
-              style={{ backgroundImage: `url(${avatarSrc(person.id)})` }}
-            />
+            {person.avatar ? (
+              <span
+                className="block size-[52px] flex-none rounded-full bg-cover bg-center shadow-[0_2px_8px_-3px_rgba(47,70,54,.3)]"
+                style={{ backgroundImage: `url(${person.avatar})` }}
+              />
+            ) : (
+              <PersonAvatar name={person.name} imageUrl={null} size={52} />
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base font-bold text-forest">
-                  {person.fullName}
+                  {person.name}
                 </span>
                 <span className="rounded-full bg-lavender px-2 py-[3px] text-[11.5px] font-bold tracking-[.06em] text-primary uppercase">
                   {isOwner ? "Borrower" : "Owner"}

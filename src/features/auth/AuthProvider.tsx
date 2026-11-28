@@ -12,6 +12,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -141,18 +142,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // left doesn't flash the sign-in gate before the redirect lands.
   }, [clerk]);
 
+  /**
+   * True once Clerk's browser script has loaded and confirmed the session.
+   * `isLoaded` alone can come from the server render, which reports a member
+   * whose short-lived session token expired as signed out until the browser
+   * refreshes it (about half a second). Only `requireAuth` and `guardLink`
+   * use this, so a click in that window isn't treated as a guest's.
+   */
+  const sessionConfirmed = useSyncExternalStore(
+    useCallback((onChange: () => void) => clerk.addListener(onChange), [clerk]),
+    () => clerk.loaded,
+    () => false,
+  );
+  const ready = isLoaded && sessionConfirmed;
+
   const guardLink = useCallback(
     (href: string) => (event: MouseEvent<HTMLElement>) => {
-      if (isSignedIn) return;
+      // Until Clerk has confirmed the session, let the link through: proxy.ts
+      // still gates account pages, and a signed-in member isn't sent to the
+      // sign-in form.
+      if (isSignedIn || !ready) return;
       event.preventDefault();
       openAuth({ intent: { kind: "navigate", href } });
     },
-    [isSignedIn, openAuth],
+    [ready, isSignedIn, openAuth],
   );
 
-  const requireAuth = useCallback(
-    (action: () => void, resumeHref?: string) => {
-      if (isSignedIn) action();
+  /** An action requested before Clerk confirmed the session. */
+  const pendingRef = useRef<{
+    action: () => void;
+    resumeHref?: string;
+  } | null>(null);
+
+  const runOrAskSignIn = useCallback(
+    (signedIn: boolean, action: () => void, resumeHref?: string) => {
+      if (signedIn) action();
       else
         openAuth({
           intent: {
@@ -162,8 +186,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         });
     },
-    [isSignedIn, openAuth],
+    [openAuth],
   );
+
+  const requireAuth = useCallback(
+    (action: () => void, resumeHref?: string) => {
+      // Before Clerk confirms the session, a signed-in member would wrongly
+      // get the sign-in form: wait for it, then decide.
+      if (!ready) {
+        pendingRef.current = { action, resumeHref };
+        return;
+      }
+      runOrAskSignIn(isSignedIn, action, resumeHref);
+    },
+    [ready, isSignedIn, runOrAskSignIn],
+  );
+
+  useEffect(() => {
+    const pending = pendingRef.current;
+    if (!ready || !pending) return;
+    pendingRef.current = null;
+    runOrAskSignIn(isSignedIn, pending.action, pending.resumeHref);
+  }, [ready, isSignedIn, runOrAskSignIn]);
 
   const value = useMemo(
     () => ({

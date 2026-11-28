@@ -123,27 +123,5 @@ test("signed-in members see the owner's short name and area", async ({
   ).toBeVisible({ timeout: 20_000 });
 });
 
-test("borrow request resumes after signing in", async ({ page }) => {
-  await page.goto("/tools/osmo-mobile");
-  await page
-    .getByRole("button", { name: /Select start date/ })
-    .filter({ visible: true })
-    .first()
-    .click();
-  const day = page
-    .getByRole("button", { name: "Nov 27", exact: true })
-    .filter({ visible: true })
-    .first();
-  await day.click();
-  await day.click();
-  await page
-    .getByRole("button", { name: "Request to borrow" })
-    .filter({ visible: true })
-    .first()
-    .click();
-  await signIn(page);
-  await expect(
-    page.getByRole("dialog", { name: "Confirm your request" }),
-  ).toBeVisible({ timeout: 20_000 });
-  await expect(page).toHaveURL(/\/tools\/osmo-mobile$/);
-});
+// The "request resumes after signing in" flow needs a listing owned by a
+// real second user, so it lives in tests/e2e/borrowing.spec.ts.

@@ -16,6 +16,8 @@ type View = { year: number; month: number };
 
 type DateRangeCalendarProps = {
   today: Date;
+  /** Last day a loan may start on (later days are only possible end days). */
+  lastStart?: Date;
   booked: Set<number>;
   maxDays: number;
   range: DateRange;
@@ -31,6 +33,7 @@ type DateRangeCalendarProps = {
  */
 export function DateRangeCalendar({
   today,
+  lastStart,
   booked,
   maxDays,
   range,
@@ -54,6 +57,7 @@ export function DateRangeCalendar({
           year={view.year}
           month={view.month}
           today={today}
+          lastStart={lastStart}
           booked={booked}
           maxDays={maxDays}
           range={range}
@@ -70,6 +74,7 @@ export function DateRangeCalendar({
           year={second.getFullYear()}
           month={second.getMonth()}
           today={today}
+          lastStart={lastStart}
           booked={booked}
           maxDays={maxDays}
           range={range}
@@ -110,6 +115,7 @@ type MonthProps = {
   year: number;
   month: number;
   today: Date;
+  lastStart?: Date;
   booked: Set<number>;
   maxDays: number;
   range: DateRange;
@@ -126,6 +132,7 @@ function Month({
   year,
   month,
   today,
+  lastStart,
   booked,
   maxDays,
   range,
@@ -193,7 +200,13 @@ function Month({
           const isEnd = end ? isSameDay(d, end) : false;
           const inRange = Boolean(start && end && d > start && d < end);
           const outOfReach = Boolean(limit && d > limit);
-          const blocked = past || isBooked;
+          // Beyond the last start day only an end day within reach is open.
+          const tooFar = Boolean(
+            lastStart &&
+            d > lastStart &&
+            !(limit && start && d > start && d <= limit),
+          );
+          const blocked = past || isBooked || tooFar;
           const selected = isStart || isEnd;
           const isToday = isSameDay(d, today);
 
@@ -209,7 +222,7 @@ function Month({
             ? "#FFFFFF"
             : isBooked
               ? "#B9A9A9"
-              : past
+              : past || tooFar
                 ? "#C3CCC5"
                 : outOfReach
                   ? "#A9B5AC"
@@ -225,7 +238,7 @@ function Month({
                 type="button"
                 onClick={() => onPick(d)}
                 disabled={blocked}
-                aria-label={`${formatShort(d)}${isBooked ? ", unavailable" : past ? ", past" : ""}`}
+                aria-label={`${formatShort(d)}${isBooked ? ", unavailable" : past ? ", past" : tooFar ? ", too far ahead" : ""}`}
                 aria-pressed={selected}
                 className="flex size-10 items-center justify-center rounded-full p-0 text-sm md:size-[38px]"
                 style={{

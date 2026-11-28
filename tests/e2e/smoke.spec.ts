@@ -1,5 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 test("home redirects to the public Explore page with LendLoop branding", async ({
   page,
 }) => {
@@ -82,18 +97,27 @@ test("product details lets a visitor pick dates", async ({ page }) => {
       .getByRole("heading", { name: "DJI Osmo Mobile" })
       .filter({ visible: true }),
   ).toBeVisible();
+  // Demo items can be browsed but not requested (their owners are fictional).
+  await expect(
+    page
+      .getByText("Demo item · requests are turned off")
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: /Select start date/ }).click();
-  // Nov 27 is the only free day before a booking: a single-day range.
+  // Today, in the browser's own calendar: a single-day range.
+  const now = new Date();
+  const today = `${MONTHS[now.getMonth()]} ${now.getDate()}`;
   const day = page
-    .getByRole("button", { name: "Nov 27", exact: true })
+    .getByRole("button", { name: today, exact: true })
     .filter({ visible: true })
     .first();
   await day.click();
   await expect(
-    page.getByText("Now pick an end date — available until Nov 27"),
+    page.getByText(/Now pick an end date — up to 7 days/),
   ).toBeVisible();
   await day.click();
-  await expect(page.getByText("Available · Nov 27 (1 day)")).toBeVisible();
+  await expect(page.getByText(`Available · ${today} (1 day)`)).toBeVisible();
 });
 
 test("protected pages send signed-out visitors to the sign-in modal", async ({

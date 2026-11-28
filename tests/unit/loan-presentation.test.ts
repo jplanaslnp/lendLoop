@@ -6,13 +6,14 @@ import {
   getNeedsHint,
   getTimeline,
 } from "@/features/loans/loanPresentation";
+import { fromMock, type LoanView } from "@/features/loans/requestView";
 import { MOCK_TODAY } from "@/mocks/people";
-import { MOCK_REQUESTS, type MockRequest } from "@/mocks/requests";
+import { MOCK_REQUESTS } from "@/mocks/requests";
 
-const byId = (id: string): MockRequest => {
+const byId = (id: string): LoanView => {
   const r = MOCK_REQUESTS.find((x) => x.id === id);
   if (!r) throw new Error(`missing ${id}`);
-  return r;
+  return fromMock(r);
 };
 
 describe("loan presentation (UI copy from the design)", () => {

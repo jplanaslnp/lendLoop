@@ -61,6 +61,7 @@ For end-to-end tests, install the Playwright browser once:
 ```bash
 pnpm exec playwright install chromium
 ```
+The signed-in e2e tests use Clerk **development** test users (`+clerk_test` emails, code 424242), read from your local environment only: `E2E_CLERK_USER_EMAIL` / `E2E_CLERK_USER_PASSWORD` (borrower) and, for the borrowing tests, a second user `E2E_CLERK_OWNER_EMAIL` / `E2E_CLERK_OWNER_PASSWORD` (owner). Tests whose variables are missing are skipped. Never commit these values.
 
 ### Scripts
 | Command | Purpose |

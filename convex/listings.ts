@@ -29,7 +29,7 @@ const OUT_ON_LOAN = new Set<Doc<"borrowRequests">["status"]>([
 
 const photoDto = v.object({ src: v.string(), label: v.string() });
 
-const ownerDto = v.object({
+export const ownerDto = v.object({
   /** Route key for the owner's profile page (members only). */
   profileId: v.string(),
   /** First name and last-name initial, e.g. "Marc S.". */
@@ -125,7 +125,7 @@ async function toItem(
   };
 }
 
-function toOwner(owner: Doc<"users">): Infer<typeof ownerDto> {
+export function toOwner(owner: Doc<"users">): Infer<typeof ownerDto> {
   return {
     profileId: owner.seedKey ?? owner._id,
     displayName: shortDisplayName(owner.name),
@@ -134,7 +134,7 @@ function toOwner(owner: Doc<"users">): Infer<typeof ownerDto> {
 }
 
 /** Owner of a visible listing, or null if the account is gone or disabled. */
-async function visibleOwner(
+export async function visibleOwner(
   ctx: QueryCtx,
   listing: Doc<"listings">,
 ): Promise<Doc<"users"> | null> {

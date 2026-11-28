@@ -1,8 +1,12 @@
+import { addIsoDays } from "@convex/lib/requestRules";
+
 import { addDays, dayKey, diffDays, isSameDay, parseIsoDate } from "./dates";
 
 /**
  * Date-range selection rules from the Product Details prototype (UI only —
- * the backend re-validates availability in later phases).
+ * Convex re-validates every request, see convex/lib/requestRules.ts).
+ * Selections are inclusive (`end` is the last day of use); stored requests
+ * are half-open `[startDate, endDate)`.
  */
 
 export type DateRange = { start: Date | null; end: Date | null };
@@ -18,6 +22,20 @@ export function buildBookedSet(
     }
   }
   return set;
+}
+
+/** Booked days from Convex ranges `[startDate, endDate)`. */
+export function bookedFromRanges(
+  ranges: readonly { startDate: string; endDate: string }[],
+): Set<number> {
+  return buildBookedSet(
+    ranges.map((r) => [r.startDate, addIsoDays(r.endDate, -1)] as const),
+  );
+}
+
+/** A selection as the half-open range Convex stores. */
+export function toRequestDates(start: Date, end: Date) {
+  return { startDate: toIsoDate(start), endDate: toIsoDate(addDays(end, 1)) };
 }
 
 /** Last selectable end date for a given start (max length or next booking). */

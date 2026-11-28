@@ -20,12 +20,7 @@ import { ROUTES } from "@/config/navigation";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { cn } from "@/lib/cn";
 import { formatShort } from "@/lib/dates";
-import { MOCK_CURRENT_USER } from "@/mocks/people";
-import {
-  MOCK_OWNER_PICKUP_DETAIL,
-  MOCK_PICKUP_NOTE,
-  type RequestRole,
-} from "@/mocks/requests";
+import type { RequestRole } from "@/mocks/requests";
 
 import {
   FILTERS,
@@ -71,20 +66,31 @@ const CHIP_LABEL: Record<Exclude<FilterKey, "active">, string> = {
   cancelled: "Cancelled",
 };
 
-type ModalState = { kind: "cancel" | "address"; id: string } | null;
+type ModalKind = "cancel" | "address" | "approve";
+type ModalState = { kind: ModalKind; id: string } | null;
 
 /**
- * Where a screen's requests come from: Convex for Borrowing (Phase 7), the
- * Phase 2 mock for Lending (until Phase 8). See LoanPages.tsx.
+ * Where a screen's requests come from and what its actions do: Convex for
+ * Borrowing and Lending (Phase 8). See LoanPages.tsx.
  */
 export type LoansData = {
   /** Undefined while loading. */
   requests: readonly LoanView[] | undefined;
   today: Date;
-  /** Actions this screen supports; others are not offered. All if unset. */
-  allowedActions?: ReadonlySet<ActionType>;
-  /** Runs a status action; returns the toast to show, if any. */
-  onAction: (request: LoanView, type: ActionType) => string | null;
+  /**
+   * Whether an action is offered for this request (Convex enforces the same
+   * rules). All design actions when unset.
+   */
+  canAct?: (request: LoanView, type: ActionType) => boolean;
+  /**
+   * Runs a status action; resolves to the toast to show, rejects with an
+   * Error whose message explains why.
+   */
+  onAction: (
+    request: LoanView,
+    type: ActionType,
+    input?: { pickupNote?: string },
+  ) => Promise<string | null>;
   /** Cancels a request; resolves to the toast, rejects with a message. */
   cancel: (request: LoanView) => Promise<string>;
 };
@@ -106,45 +112,46 @@ export function LoansScreen({
   const [selectedId, setSelectedId] = useState("");
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
-  const [cancelling, setCancelling] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const statuses = FILTERS[filter];
   const rows = requests.filter((r) => !statuses || statuses.includes(r.status));
   const current = requests.find((r) => r.id === selectedId) ?? requests[0];
+
+  /** Runs `work` once at a time and shows its toast or error message. */
+  const run = async (work: () => Promise<string | null>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const message = await work();
+      if (message) toast.show(message);
+    } catch (error) {
+      toast.show(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+      setModal(null);
+    }
+  };
 
   const onAction = (request: LoanView, type: ActionType) => {
     if (type === "details") {
       router.push(ROUTES.tool(request.item.routeId));
       return;
     }
-    if (type === "address" || type === "cancel") {
+    if (type === "address" || type === "cancel" || type === "approve") {
       setModal({ kind: type, id: request.id });
       return;
     }
-    const message = data.onAction(request, type);
-    if (message) toast.show(message);
+    void run(() => data.onAction(request, type));
   };
 
   const modalRequest = modal
     ? requests.find((r) => r.id === modal.id)
     : undefined;
-
-  const confirmCancel = async () => {
-    if (!modalRequest || cancelling) return;
-    setCancelling(true);
-    try {
-      toast.show(await data.cancel(modalRequest));
-    } catch (error) {
-      toast.show(
-        error instanceof Error
-          ? error.message
-          : "Couldn’t cancel. Please try again.",
-      );
-    } finally {
-      setCancelling(false);
-      setModal(null);
-    }
-  };
 
   return (
     <div
@@ -256,7 +263,11 @@ export function LoansScreen({
                   request={current}
                   today={today}
                   onAction={(type) => onAction(current, type)}
-                  allowedActions={data.allowedActions}
+                  canAct={
+                    data.canAct
+                      ? (type) => data.canAct?.(current, type) ?? true
+                      : undefined
+                  }
                 />
               </div>
             ) : null}
@@ -269,16 +280,28 @@ export function LoansScreen({
       <Dialog
         open={Boolean(modal && modalRequest)}
         onClose={() => setModal(null)}
-        label={modal?.kind === "address" ? "Pickup address" : "Cancel"}
+        label={
+          modal?.kind === "address"
+            ? "Pickup details"
+            : modal?.kind === "approve"
+              ? "Approve request"
+              : "Cancel"
+        }
       >
         {modal && modalRequest ? (
           <LoanModalContent
             kind={modal.kind}
             request={modalRequest}
             today={today}
-            busy={cancelling}
+            busy={busy}
             onClose={() => setModal(null)}
-            onConfirmCancel={() => void confirmCancel()}
+            onConfirm={(pickupNote) =>
+              void run(() =>
+                modal.kind === "approve"
+                  ? data.onAction(modalRequest, "approve", { pickupNote })
+                  : data.cancel(modalRequest),
+              )
+            }
           />
         ) : null}
       </Dialog>
@@ -291,30 +314,34 @@ export function LoansScreen({
   );
 }
 
+const NOTE_MAX = 200;
+
 function LoanModalContent({
   kind,
   request,
   today,
   busy,
   onClose,
-  onConfirmCancel,
+  onConfirm,
 }: {
-  kind: "cancel" | "address";
+  kind: ModalKind;
   request: LoanView;
   today: Date;
   busy: boolean;
   onClose: () => void;
-  onConfirmCancel: () => void;
+  onConfirm: (pickupNote?: string) => void;
 }) {
   const { first, start, end, person, itemName } = requestContext(
     request,
     today,
   );
-  const isLoan = request.role === "received" && request.status !== "pending";
+  const [note, setNote] = useState("");
+  const isLoan = request.status !== "pending";
   const range = `${formatShort(start)} – ${formatShort(end)}`;
   const item = itemName.toLowerCase();
 
-  const icon: IconName = kind === "cancel" ? "ban" : "pin";
+  const icon: IconName =
+    kind === "cancel" ? "ban" : kind === "approve" ? "check" : "pin";
   return (
     <>
       <div
@@ -332,26 +359,48 @@ function LoanModalContent({
           ? isLoan
             ? "Cancel this loan?"
             : "Cancel this request?"
-          : "Pickup address"}
+          : kind === "approve"
+            ? "Approve this request?"
+            : "Pickup details"}
       </h3>
       <p className="mt-2.5 mb-0 text-[15px] leading-normal text-pretty text-ink-muted">
         {kind === "cancel"
-          ? request.role === "sent" && request.status === "pending"
-            ? `Your request for ${range} will be withdrawn. It stays in your history.`
-            : `${first} will be notified and ${range} will be released for other neighbours. The request stays in your history.`
-          : request.role === "sent"
-            ? `Collect the ${item} from ${first} on ${formatShort(start)}.`
-            : `${first} will collect the ${item} from you on ${formatShort(start)}.`}
+          ? isLoan
+            ? `${range} will be released for other neighbours. The loan stays in your history.`
+            : `Your request for ${range} will be withdrawn. It stays in your history.`
+          : kind === "approve"
+            ? `${first} can then collect the ${item} for ${range}. Other pending requests for these dates will be declined.`
+            : `Collect the ${item} from ${first} on ${formatShort(start)}.`}
       </p>
       {kind === "address" ? (
         <div className="mt-4 rounded-[14px] border border-solid border-[rgba(47,70,54,.08)] bg-hover-sage p-4">
           <div className="text-base font-bold text-forest">
-            {request.role === "sent"
-              ? `${person.place} · ${MOCK_OWNER_PICKUP_DETAIL}`
-              : MOCK_CURRENT_USER.address}
+            {person.pickupArea} · approximate area
           </div>
-          <div className="mt-1 text-sm text-ink-muted">{MOCK_PICKUP_NOTE}</div>
+          <div className="mt-1 text-sm whitespace-pre-line text-ink-muted">
+            {request.pickupNote ??
+              `${first} didn’t add a pickup note. Arrange the pickup with them.`}
+          </div>
         </div>
+      ) : null}
+      {kind === "approve" ? (
+        <label className="mt-4 flex flex-col gap-2 text-[14.5px] font-bold text-forest">
+          <span>
+            Pickup note for {first}{" "}
+            <span className="block text-[13.5px] font-medium text-ink-soft">
+              Optional · only {first} sees it. Don’t share your exact address
+              here unless you want to.
+            </span>
+          </span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={NOTE_MAX}
+            rows={3}
+            placeholder="e.g. Ring at the blue door, weekdays after 6 pm."
+            className="box-border w-full resize-none rounded-field border border-solid border-[rgba(47,70,54,.18)] bg-white px-3.5 py-3 font-sans text-[15px] leading-[1.45] font-normal text-forest outline-none focus:border-primary focus:shadow-focus"
+          />
+        </label>
       ) : null}
       <div className="mt-6 flex flex-wrap gap-2.5">
         <Button
@@ -359,16 +408,31 @@ function LoanModalContent({
           onClick={onClose}
           className="min-h-[50px] flex-[1_1_140px] text-[15px] font-bold"
         >
-          {kind === "address" ? "Close" : isLoan ? "Keep loan" : "Keep request"}
+          {kind === "address"
+            ? "Close"
+            : kind === "approve"
+              ? "Back"
+              : isLoan
+                ? "Keep loan"
+                : "Keep request"}
         </Button>
         {kind === "cancel" ? (
           <Button
             variant="danger"
-            onClick={onConfirmCancel}
+            onClick={() => onConfirm()}
             disabled={busy}
             className="min-h-[50px] flex-[1_1_160px] text-[15px] font-bold"
           >
             {isLoan ? "Yes, cancel loan" : "Yes, cancel request"}
+          </Button>
+        ) : null}
+        {kind === "approve" ? (
+          <Button
+            onClick={() => onConfirm(note.trim() || undefined)}
+            disabled={busy}
+            className="min-h-[50px] flex-[1_1_160px] text-[15px] font-bold"
+          >
+            Approve
           </Button>
         ) : null}
       </div>

@@ -7,9 +7,13 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { cancelPendingForArchivedListing } from "./borrowRequests";
+import {
+  cancelPendingForArchivedListing,
+  requestsForListing,
+} from "./borrowRequests";
 import { availabilityOf, findListing } from "./listings";
 import { requireUser } from "./lib/auth";
+import { BLOCKING_STATUSES } from "./lib/requestRules";
 import {
   ACTIVE_LISTINGS_MAX,
   listingTextProblems,
@@ -113,6 +117,21 @@ async function attach(
       await ctx.db.patch(upload._id, { status: "attached", listingId });
     }
   }
+}
+
+const ACTIVE_LOAN = new Set<string>(BLOCKING_STATUSES);
+
+/**
+ * Is a loan arranged or under way (approved, ready for pickup, borrowed,
+ * overdue or return pending)? Archiving is refused then (Phase 8).
+ */
+async function hasActiveLoan(
+  ctx: QueryCtx,
+  listingId: Id<"listings">,
+): Promise<boolean> {
+  return (await requestsForListing(ctx, listingId)).some((r) =>
+    ACTIVE_LOAN.has(r.status),
+  );
 }
 
 /** Has any borrow request ever referenced this listing? */
@@ -253,10 +272,10 @@ export const archive = mutation({
   handler: async (ctx, { id }) => {
     const owner = await requireUser(ctx);
     const listing = await ownActiveListing(ctx, owner, id);
-    if ((await availabilityOf(ctx, id)) === "borrowed") {
+    if (await hasActiveLoan(ctx, id)) {
       throw listingError(
         "ON_LOAN",
-        "You can’t remove an item while it’s on loan.",
+        "You can’t remove an item while it’s on loan or a loan is arranged.",
       );
     }
     const now = Date.now();
@@ -281,6 +300,8 @@ const myListingDto = v.object({
   category: categoryValidator,
   mainPhoto: v.union(v.string(), v.null()),
   onLoan: v.boolean(),
+  /** A loan is arranged or under way: the listing can't be removed. */
+  activeLoan: v.boolean(),
 });
 
 /** The caller's active listings, newest first ([] when signed out). */
@@ -308,6 +329,7 @@ export const mine = query({
           ? await ctx.storage.getUrl(first)
           : (listing.photos?.[0]?.path ?? null),
         onLoan: (await availabilityOf(ctx, listing._id)) === "borrowed",
+        activeLoan: await hasActiveLoan(ctx, listing._id),
       });
     }
     return result;

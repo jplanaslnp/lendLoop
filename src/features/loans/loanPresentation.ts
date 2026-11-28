@@ -111,7 +111,7 @@ export function getActions(request: LoanView, today: Date): RequestAction[] {
     const map: Record<LoanStatus, RequestAction[]> = {
       pending: [details, cancelRequest],
       approved: [
-        a("primary", "View Pickup Address", "address", "pin"),
+        a("primary", "View Pickup Details", "address", "pin"),
         details,
         cancelRequest,
       ],
@@ -142,13 +142,15 @@ export function getActions(request: LoanView, today: Date): RequestAction[] {
     ],
     approved: [
       a("primary", "Item ready for pickup", "ready", "box"),
-      a("secondary", "View Pickup Address", "address", "pin"),
+      a("secondary", "View Pickup Details", "address", "pin"),
       cancelLoan,
     ],
     ready: [
       info(`Waiting for ${first} to confirm pickup`, "ready", "clock"),
       cancelLoan,
     ],
+    borrowed: [a("secondary", "Confirm Return", "confirmReturn", "check")],
+    overdue: [a("secondary", "Confirm Return", "confirmReturn", "check")],
     returnPending: [a("primary", "Confirm Return", "confirmReturn", "check")],
   };
   return map[request.status] ?? [];
@@ -196,7 +198,7 @@ export function getBanner(request: LoanView, today: Date): Banner {
         return B(
           "approved",
           "Pickup coming up",
-          `Meet ${first} at your pickup address. When you hand over the ${item}, tap Item ready for pickup.`,
+          `Arrange the pickup with ${first}. When the ${item} is ready to hand over, tap Item ready for pickup.`,
         );
       case "ready":
         return B(
@@ -211,11 +213,7 @@ export function getBanner(request: LoanView, today: Date): Banner {
           `With ${first} · due back ${endShort} (${left}).`,
         );
       case "overdue":
-        return B(
-          "overdue",
-          "Overdue",
-          `Was due back ${endShort} · ${late}. ${first} has been reminded.`,
-        );
+        return B("overdue", "Overdue", `Was due back ${endShort} · ${late}.`);
       case "returnPending":
         return B(
           "returnPending",
@@ -229,7 +227,13 @@ export function getBanner(request: LoanView, today: Date): Banner {
           `Both of you confirmed the return on ${request.log.returned}.`,
         );
       case "declined":
-        return B("declined", "Declined", "You declined this request.");
+        return B(
+          "declined",
+          "Declined",
+          request.declineReason === "dates_taken"
+            ? "Declined automatically: you approved another request for these dates."
+            : "You declined this request.",
+        );
       case "cancelled":
         return cancelled;
     }
@@ -245,7 +249,7 @@ export function getBanner(request: LoanView, today: Date): Banner {
       return B(
         "approved",
         "Request approved",
-        `Pick up the ${item} from ${first} at the pickup address.`,
+        `Pick up the ${item} from ${first}. Open the pickup details for their note.`,
       );
     case "ready":
       return B(
@@ -263,7 +267,7 @@ export function getBanner(request: LoanView, today: Date): Banner {
       return B(
         "overdue",
         "Overdue",
-        `Return was due ${endShort} · ${late}. Return it or request an extension.`,
+        `Return was due ${endShort} · ${late}. Please return it as soon as you can.`,
       );
     case "returnPending":
       return B(
@@ -278,7 +282,13 @@ export function getBanner(request: LoanView, today: Date): Banner {
         `${first} confirmed the return on ${request.log.returned}.`,
       );
     case "declined":
-      return B("declined", "Declined", `${first} declined this request.`);
+      return B(
+        "declined",
+        "Declined",
+        request.declineReason === "dates_taken"
+          ? "These dates were given to another request."
+          : `${first} declined this request.`,
+      );
     case "cancelled":
       return cancelled;
   }
@@ -393,37 +403,4 @@ export function getNeedsHint(request: LoanView): string | null {
     overdue: "Return overdue",
   };
   return map[request.status] ?? null;
-}
-
-/** Status change + timeline log key applied by each mock action. */
-export const ACTION_TRANSITIONS: Partial<
-  Record<ActionType, { status: LoanStatus; logKey: keyof LoanView["log"] }>
-> = {
-  approve: { status: "approved", logKey: "approved" },
-  decline: { status: "declined", logKey: "declined" },
-  ready: { status: "ready", logKey: "ready" },
-  pickup: { status: "borrowed", logKey: "pickedUp" },
-  markReturned: { status: "returnPending", logKey: "returnMarked" },
-  confirmReturn: { status: "returned", logKey: "returned" },
-};
-
-export function actionToast(type: ActionType, first: string): string | null {
-  switch (type) {
-    case "approve":
-      return `Request approved · ${first} has been notified.`;
-    case "decline":
-      return `Request declined · ${first} has been notified.`;
-    case "ready":
-      return `Marked ready · ${first} was notified to confirm pickup.`;
-    case "pickup":
-      return `Pickup confirmed · the loan has started. ${first} has been notified.`;
-    case "markReturned":
-      return `Marked as returned · waiting for ${first} to confirm.`;
-    case "confirmReturn":
-      return `Return confirmed · loan completed. ${first} has been notified.`;
-    case "extension":
-      return `Extension request sent to ${first}.`;
-    default:
-      return null;
-  }
 }

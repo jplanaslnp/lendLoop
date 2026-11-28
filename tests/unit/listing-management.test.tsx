@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { ConvexError } from "convex/values";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -91,12 +97,13 @@ const EDITABLE = {
   ],
 };
 
-const myItem = (name: string, onLoan = false) => ({
+const myItem = (name: string, onLoan = false, activeLoan = onLoan) => ({
   id: `id_${name}` as Id<"listings">,
   name,
   category: "garden" as const,
   mainPhoto: "https://x.convex.cloud/main",
   onLoan,
+  activeLoan,
 });
 
 const withAuth = (ui: React.ReactNode) =>
@@ -226,6 +233,73 @@ describe("My Profile listings", () => {
     expect(
       screen.getAllByRole("menuitem", { name: "View in Explore" })[0],
     ).toHaveAttribute("href", "/tools/id_Hedge Trimmer");
+  });
+
+  it("does not offer removal while a loan is arranged (Phase 8)", () => {
+    // Approved but not picked up yet: still shown as available.
+    state.queries["myListings:mine"] = [myItem("Lawn Mower", false, true)];
+    withAuth(<MyProfileScreen />);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Actions for Lawn Mower" })[0]!,
+    );
+    expect(
+      screen.getAllByRole("menuitem", {
+        name: "Can’t remove while on loan",
+      })[0],
+    ).toBeDisabled();
+  });
+
+  it("shows real lending and borrowing history", () => {
+    state.queries["myListings:mine"] = [];
+    const listing = {
+      id: "l1" as Id<"listings">,
+      locationLabel: "Patershol, Gent",
+      photo: null,
+      active: true,
+    };
+    const common = {
+      id: "r1" as Id<"borrowRequests">,
+      startDate: "2026-12-01",
+      endDate: "2026-12-04",
+      message: null,
+      createdAt: 1,
+      dueAt: null,
+      cancelledBy: null,
+      cancelReason: null,
+      declineReason: null,
+      history: [],
+    };
+    state.queries["loans:incoming"] = [
+      {
+        ...common,
+        status: "borrowed",
+        listing: { ...listing, name: "Hedge Trimmer" },
+        borrower: { profileId: "b", displayName: "Bruno M.", imageUrl: null },
+      },
+    ];
+    state.queries["borrowRequests:mine"] = [
+      {
+        ...common,
+        id: "r2" as Id<"borrowRequests">,
+        status: "pending",
+        approvedAt: null,
+        readyAt: null,
+        pickedUpAt: null,
+        returnedAt: null,
+        declinedAt: null,
+        cancelledAt: null,
+        pickupNote: null,
+        listing: { ...listing, name: "Step Ladder" },
+        owner: { profileId: "o", displayName: "Olive T.", imageUrl: null },
+      },
+    ];
+    withAuth(<MyProfileScreen />);
+    const lending = screen.getByRole("region", { name: "Lending History" });
+    expect(within(lending).getByText("Hedge Trimmer")).toBeInTheDocument();
+    expect(within(lending).getByText("To Bruno M.")).toBeInTheDocument();
+    const borrowing = screen.getByRole("region", { name: "Borrowing History" });
+    expect(within(borrowing).getByText("Step Ladder")).toBeInTheDocument();
+    expect(within(borrowing).getByText("From Olive T.")).toBeInTheDocument();
   });
 
   it("does not offer removal while an item is on loan", () => {

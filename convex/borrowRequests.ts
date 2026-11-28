@@ -9,6 +9,8 @@ import {
 } from "./_generated/server";
 import { ownerDto, photosOf, toOwner, visibleOwner } from "./listings";
 import { getActiveMember, requireUser } from "./lib/auth";
+import { applyTransition, recordCreated } from "./lib/history";
+import { canTransition, PICKUP_NOTE_VISIBLE } from "./lib/lifecycle";
 import {
   BLOCKING_STATUSES,
   checkRequestDates,
@@ -19,7 +21,11 @@ import {
   PENDING_REQUESTS_MAX,
   rangesOverlap,
 } from "./lib/requestRules";
-import { borrowStatusValidator } from "./schema";
+import {
+  borrowStatusValidator,
+  requestActorValidator,
+  requestReasonValidator,
+} from "./schema";
 
 /**
  * Borrow requests, borrower side (Phase 7): create a pending request,
@@ -212,7 +218,7 @@ export const create = mutation({
     }
 
     const now = Date.now();
-    return ctx.db.insert("borrowRequests", {
+    const requestId = await ctx.db.insert("borrowRequests", {
       listingId: listing._id,
       ownerId: listing.ownerId,
       borrowerId: borrower._id,
@@ -225,32 +231,63 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await recordCreated(ctx, requestId, borrower._id, now);
+    return requestId;
   },
 });
 
-/** The borrower withdraws their own request while it is still pending. */
+/**
+ * The caller's part in a request: its borrower, or the owner of its listing
+ * (the stored owner must still match the listing). Null for anyone else,
+ * admins included (Phase 8: admins act only as members).
+ */
+export async function roleOf(
+  ctx: QueryCtx,
+  request: Doc<"borrowRequests">,
+  user: Doc<"users">,
+): Promise<"borrower" | "owner" | null> {
+  if (request.borrowerId === user._id) return "borrower";
+  if (request.ownerId !== user._id) return null;
+  const listing = await ctx.db.get(request.listingId);
+  return listing?.ownerId === user._id ? "owner" : null;
+}
+
+/**
+ * Cancels a request before pickup (Phase 8): the borrower while it is
+ * pending, approved or ready for pickup; the owner once it is approved or
+ * ready (a pending request is declined instead). Never after pickup: the
+ * item then follows the return flow.
+ */
 export const cancel = mutation({
   args: { id: v.id("borrowRequests") },
   returns: v.null(),
   handler: async (ctx, { id }) => {
-    const borrower = await requireUser(ctx);
+    const user = await requireUser(ctx);
     const request = await ctx.db.get(id);
-    if (!request || request.borrowerId !== borrower._id) {
+    const role = request ? await roleOf(ctx, request, user) : null;
+    if (!request || !role) {
       throw requestError("NOT_FOUND", "This request doesn’t exist.");
     }
-    if (request.status !== "pending") {
+    const allowed = canTransition(
+      role === "borrower" ? "cancelByBorrower" : "cancelByOwner",
+      request.status,
+    );
+    if (!allowed) {
       throw requestError(
         "NOT_CANCELLABLE",
-        "Only requests that are still waiting for the owner can be cancelled.",
+        role === "owner" && request.status === "pending"
+          ? "Decline the request instead."
+          : "This can no longer be cancelled.",
       );
     }
     const now = Date.now();
-    await ctx.db.patch(request._id, {
-      status: "cancelled",
-      cancelledAt: now,
-      cancelledBy: borrower._id,
-      updatedAt: now,
-    });
+    await applyTransition(
+      ctx,
+      request,
+      "cancelled",
+      { role, userId: user._id },
+      { patch: { cancelledAt: now, cancelledBy: user._id }, at: now },
+    );
     return null;
   },
 });
@@ -267,13 +304,21 @@ export async function cancelPendingForArchivedListing(
 ): Promise<void> {
   for (const request of await requestsForListing(ctx, listingId)) {
     if (request.status !== "pending") continue;
-    await ctx.db.patch(request._id, {
-      status: "cancelled",
-      cancelledAt: now,
-      cancelledBy: ownerId,
-      cancelReason: "listing_archived",
-      updatedAt: now,
-    });
+    await applyTransition(
+      ctx,
+      request,
+      "cancelled",
+      { role: "owner", userId: ownerId },
+      {
+        patch: {
+          cancelledAt: now,
+          cancelledBy: ownerId,
+          cancelReason: "listing_archived",
+        },
+        reason: "listing_archived",
+        at: now,
+      },
+    );
   }
 }
 
@@ -335,6 +380,37 @@ export const forListing = query({
 const MINE_LIMIT = 100;
 const optionalTime = v.union(v.number(), v.null());
 
+/** A history event as the borrower or owner sees it (no user IDs). */
+export const historyDto = v.object({
+  from: v.union(borrowStatusValidator, v.null()),
+  to: borrowStatusValidator,
+  /** "you" when the caller made the change. */
+  by: v.union(v.literal("you"), requestActorValidator),
+  at: v.number(),
+  reason: v.union(requestReasonValidator, v.null()),
+});
+
+/** A request's history, oldest first, from the caller's point of view. */
+export async function historyFor(
+  ctx: QueryCtx,
+  requestId: Id<"borrowRequests">,
+  me: Id<"users">,
+) {
+  const events = await ctx.db
+    .query("requestEvents")
+    .withIndex("by_request", (q) => q.eq("requestId", requestId))
+    .collect();
+  return events
+    .sort((a, b) => a.at - b.at)
+    .map((e) => ({
+      from: e.from,
+      to: e.to,
+      by: e.actorId === me ? ("you" as const) : e.actor,
+      at: e.at,
+      reason: e.reason ?? null,
+    }));
+}
+
 const myRequestDto = v.object({
   id: v.id("borrowRequests"),
   status: borrowStatusValidator,
@@ -351,6 +427,12 @@ const myRequestDto = v.object({
   cancelledAt: optionalTime,
   cancelledBy: v.union(v.literal("you"), v.literal("owner"), v.null()),
   cancelReason: v.union(v.literal("listing_archived"), v.null()),
+  declineReason: v.union(v.literal("dates_taken"), v.null()),
+  /** UTC instant the loan becomes overdue (set at pickup). */
+  dueAt: optionalTime,
+  /** The owner's pickup note: only once the request is approved. */
+  pickupNote: v.union(v.string(), v.null()),
+  history: v.array(historyDto),
   listing: v.object({
     id: v.id("listings"),
     name: v.string(),
@@ -401,6 +483,13 @@ export const mine = query({
               ? ("you" as const)
               : ("owner" as const),
         cancelReason: r.cancelReason ?? null,
+        declineReason:
+          r.declineReason === "dates_taken" ? ("dates_taken" as const) : null,
+        dueAt: r.dueAt ?? null,
+        pickupNote: PICKUP_NOTE_VISIBLE.has(r.status)
+          ? (r.pickupNote ?? null)
+          : null,
+        history: await historyFor(ctx, r._id, borrower._id),
         listing: {
           id: listing._id,
           name: listing.name,

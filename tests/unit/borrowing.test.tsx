@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import type { ListingDetail } from "@/features/listings/types";
 import { BorrowingScreen, LendingScreen } from "@/features/loans/LoanPages";
-import type { MyRequest } from "@/features/loans/requestView";
+import type { IncomingRequest, MyRequest } from "@/features/loans/requestView";
 import { ProductDetailsScreen } from "@/features/tools/ProductDetailsScreen";
 import type { Id } from "@convex/_generated/dataModel";
 
@@ -25,6 +25,12 @@ const state: { queries: Record<string, unknown> } = { queries: {} };
 const mutations = {
   "borrowRequests:create": vi.fn(async () => "request_1"),
   "borrowRequests:cancel": vi.fn(async () => null),
+  "loans:approve": vi.fn(async () => null),
+  "loans:decline": vi.fn(async () => null),
+  "loans:markReady": vi.fn(async () => null),
+  "loans:confirmPickup": vi.fn(async () => null),
+  "loans:markReturned": vi.fn(async () => null),
+  "loans:confirmReturn": vi.fn(async () => null),
 };
 
 vi.mock("convex/react", () => ({
@@ -237,6 +243,18 @@ const mine = (extra: Partial<MyRequest> = {}): MyRequest => ({
   cancelledAt: null,
   cancelledBy: null,
   cancelReason: null,
+  declineReason: null,
+  dueAt: null,
+  pickupNote: null,
+  history: [
+    {
+      from: null,
+      to: "pending",
+      by: "you",
+      at: new Date(2026, 10, 28, 9, 5).getTime(),
+      reason: null,
+    },
+  ],
   listing: {
     id: listingId,
     name: "Step Ladder",
@@ -247,6 +265,41 @@ const mine = (extra: Partial<MyRequest> = {}): MyRequest => ({
   owner: { profileId: "u_olive", displayName: "Olive T.", imageUrl: null },
   ...extra,
 });
+
+const at = (hour: number, minute = 0) =>
+  new Date(2026, 10, 28, hour, minute).getTime();
+
+const incoming = (extra: Partial<IncomingRequest> = {}): IncomingRequest => ({
+  id: "request_9" as Id<"borrowRequests">,
+  status: "pending",
+  startDate: "2026-12-01",
+  endDate: "2026-12-04",
+  message: "Hi! For a weekend project.",
+  createdAt: at(9, 5),
+  dueAt: null,
+  cancelledBy: null,
+  cancelReason: null,
+  declineReason: null,
+  history: [
+    { from: null, to: "pending", by: "borrower", at: at(9, 5), reason: null },
+  ],
+  listing: {
+    id: listingId,
+    name: "Step Ladder",
+    locationLabel: "Patershol, Gent",
+    photo: null,
+    active: true,
+  },
+  borrower: { profileId: "u_bruno", displayName: "Bruno M.", imageUrl: null },
+  ...extra,
+});
+
+const detailOf = (name = "Step Ladder") =>
+  screen.getByRole("region", { name: `${name} request` });
+const actionLabels = () =>
+  within(detailOf())
+    .queryAllByRole("button")
+    .map((b) => b.textContent?.trim());
 
 describe("Borrowing page (Convex)", () => {
   it("shows a loading state, then the empty state", () => {
@@ -261,7 +314,7 @@ describe("Borrowing page (Convex)", () => {
     expect(screen.getByText("No requests here")).toBeInTheDocument();
   });
 
-  it("shows a pending request with only the actions Phase 7 supports", () => {
+  it("offers only Details and Cancel on a pending request", () => {
     state.queries["borrowRequests:mine"] = [mine()];
     withAuth(<BorrowingScreen />);
     const detail = screen.getByRole("region", { name: "Step Ladder request" });
@@ -279,7 +332,7 @@ describe("Borrowing page (Convex)", () => {
     expect(actions).toEqual(
       expect.arrayContaining(["See Product Details", "Cancel Request"]),
     );
-    expect(actions).not.toContain("View Pickup Address");
+    expect(actions).not.toContain("View Pickup Details");
   });
 
   it("cancels a pending request through Convex", async () => {
@@ -320,12 +373,203 @@ describe("Borrowing page (Convex)", () => {
   });
 });
 
-describe("Lending page (mock until Phase 8)", () => {
-  it("still renders the design's mock requests and actions", () => {
-    withAuth(<LendingScreen />);
+describe("Borrowing page: loan steps", () => {
+  it("shows the pickup note and only the approximate area once approved", () => {
+    state.queries["borrowRequests:mine"] = [
+      mine({
+        status: "approved",
+        approvedAt: at(10),
+        pickupNote: "Ring at the blue door after 6 pm.",
+        history: [
+          ...mine().history,
+          {
+            from: "pending",
+            to: "approved",
+            by: "owner",
+            at: at(10),
+            reason: null,
+          },
+        ],
+      }),
+    ];
+    withAuth(<BorrowingScreen />);
+    expect(actionLabels()).toEqual(
+      expect.arrayContaining(["View Pickup Details", "Cancel Request"]),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "View Pickup Details" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Pickup details" });
     expect(
-      screen.getByRole("heading", { level: 1, name: "Lending" }),
+      within(dialog).getByText("Patershol, Gent · approximate area"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Ring at the blue door after 6 pm."),
+    ).toBeInTheDocument();
+  });
+
+  it("confirms pickup through Convex when the item is ready", async () => {
+    state.queries["borrowRequests:mine"] = [
+      mine({ status: "ready_for_pickup" }),
+    ];
+    withAuth(<BorrowingScreen />);
+    expect(actionLabels()).toEqual(
+      expect.arrayContaining(["Confirm Pickup", "Cancel Request"]),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Pickup" }));
+    await waitFor(() =>
+      expect(
+        screen.getByText("Pickup confirmed · the loan has started."),
+      ).toBeInTheDocument(),
+    );
+    expect(mutations["loans:confirmPickup"]).toHaveBeenCalledWith({
+      id: "request_1",
+    });
+  });
+
+  it("offers Mark as Returned on an overdue loan, never an extension", () => {
+    state.queries["borrowRequests:mine"] = [mine({ status: "overdue" })];
+    withAuth(<BorrowingScreen />);
+    const labels = actionLabels();
+    expect(labels).toContain("Mark as Returned");
+    expect(labels).not.toContain("Request Extension");
+    expect(labels).not.toContain("Cancel Request");
+  });
+
+  it("explains requests declined because the dates were taken", () => {
+    state.queries["borrowRequests:mine"] = [
+      mine({ status: "declined", declineReason: "dates_taken" }),
+    ];
+    withAuth(<BorrowingScreen />);
+    expect(
+      screen.getByText("These dates were given to another request."),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("Lending page (Convex)", () => {
+  it("shows the borrower, dates and message with Approve and Decline", () => {
+    state.queries["loans:incoming"] = [incoming()];
+    withAuth(<LendingScreen />);
+    const detail = detailOf();
+    expect(within(detail).getByText("Bruno M.")).toBeInTheDocument();
+    expect(within(detail).getByText("Dec 1 – Dec 3, 2026")).toBeInTheDocument();
+    expect(within(detail).getByText("Message from Bruno")).toBeInTheDocument();
+    expect(
+      within(detail).getByText("Hi! For a weekend project."),
+    ).toBeInTheDocument();
+    const labels = actionLabels();
+    expect(labels).toEqual(expect.arrayContaining(["Approve", "Decline"]));
+    // A pending request is declined, not cancelled, by the owner.
+    expect(labels).not.toContain("Cancel Request");
+  });
+
+  it("approves with an optional pickup note", async () => {
+    state.queries["loans:incoming"] = [incoming()];
+    withAuth(<LendingScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    const dialog = screen.getByRole("dialog", { name: "Approve request" });
+    fireEvent.change(within(dialog).getByRole("textbox"), {
+      target: { value: "  Blue door, after 6 pm.  " },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Approve" }));
+    await waitFor(() =>
+      expect(mutations["loans:approve"]).toHaveBeenCalledWith({
+        id: "request_9",
+        pickupNote: "Blue door, after 6 pm.",
+      }),
+    );
+  });
+
+  it("declines through Convex", async () => {
+    state.queries["loans:incoming"] = [incoming()];
+    withAuth(<LendingScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
+    await waitFor(() =>
+      expect(screen.getByText("Request declined.")).toBeInTheDocument(),
+    );
+    expect(mutations["loans:decline"]).toHaveBeenCalledWith({
+      id: "request_9",
+    });
+  });
+
+  it("marks an approved loan ready, and can cancel it", () => {
+    state.queries["loans:incoming"] = [incoming({ status: "approved" })];
+    withAuth(<LendingScreen />);
+    const labels = actionLabels();
+    expect(labels).toEqual(
+      expect.arrayContaining(["Item ready for pickup", "Cancel Loan"]),
+    );
+    expect(labels).not.toContain("View Pickup Details");
+  });
+
+  it("lets the owner confirm a return directly from borrowed", async () => {
+    state.queries["loans:incoming"] = [incoming({ status: "borrowed" })];
+    withAuth(<LendingScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Return" }));
+    await waitFor(() =>
+      expect(mutations["loans:confirmReturn"]).toHaveBeenCalledWith({
+        id: "request_9",
+      }),
+    );
+  });
+
+  it("shows the server's reason when an action is refused", async () => {
+    mutations["loans:approve"].mockRejectedValueOnce(
+      new ConvexError({
+        code: "DATES_UNAVAILABLE",
+        message: "Those dates are already taken by another loan.",
+      }),
+    );
+    state.queries["loans:incoming"] = [incoming()];
+    withAuth(<LendingScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Approve request" })).getByRole(
+        "button",
+        { name: "Approve" },
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText("Those dates are already taken by another loan."),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("builds the timeline from the request history", () => {
+    state.queries["loans:incoming"] = [
+      incoming({
+        status: "ready_for_pickup",
+        history: [
+          {
+            from: null,
+            to: "pending",
+            by: "borrower",
+            at: at(9, 5),
+            reason: null,
+          },
+          {
+            from: "pending",
+            to: "approved",
+            by: "you",
+            at: at(10, 15),
+            reason: null,
+          },
+          {
+            from: "approved",
+            to: "ready_for_pickup",
+            by: "you",
+            at: at(11, 30),
+            reason: null,
+          },
+        ],
+      }),
+    ];
+    withAuth(<LendingScreen />);
+    const detail = detailOf();
+    for (const time of ["Today · 09:05", "Today · 10:15", "Today · 11:30"]) {
+      expect(within(detail).getByText(time)).toBeInTheDocument();
+    }
   });
 });

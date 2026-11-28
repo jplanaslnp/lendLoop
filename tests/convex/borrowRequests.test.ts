@@ -665,7 +665,10 @@ describe("cancelling", () => {
     ).resolves.toBeTruthy();
   });
 
-  it("refuses other people and non-pending requests", async () => {
+  it("refuses other people, and owners on pending requests", async () => {
+    // Phase 8 widened cancelling (docs/DECISIONS.md): the borrower may also
+    // cancel approved/ready loans, the owner approved/ready ones; a pending
+    // request is declined by the owner, never cancelled.
     const { t, borrower, other, owner, listingId, borrowerId } = await setup();
     const id = await borrower.mutation(
       api.borrowRequests.create,
@@ -677,24 +680,27 @@ describe("cancelling", () => {
     );
     await expectCode(
       owner.mutation(api.borrowRequests.cancel, { id }),
-      "NOT_FOUND",
+      "NOT_CANCELLABLE",
     );
     await expectCode(
       t.mutation(api.borrowRequests.cancel, { id }),
       "UNAUTHENTICATED",
     );
-    const approved = await loan(
+    // After pickup nobody can cancel.
+    const borrowed = await loan(
       t,
       listingId,
       borrowerId,
-      "approved",
+      "borrowed",
       "2026-12-20",
       "2026-12-22",
     );
-    await expectCode(
-      borrower.mutation(api.borrowRequests.cancel, { id: approved }),
-      "NOT_CANCELLABLE",
-    );
+    for (const who of [borrower, owner]) {
+      await expectCode(
+        who.mutation(api.borrowRequests.cancel, { id: borrowed }),
+        "NOT_CANCELLABLE",
+      );
+    }
   });
 });
 

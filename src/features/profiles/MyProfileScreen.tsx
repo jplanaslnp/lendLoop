@@ -27,11 +27,13 @@ import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { MONTH_SHORT } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { MOCK_CURRENT_USER } from "@/mocks/people";
+import { formatShort, parseIsoDate } from "@/lib/dates";
+import { useLocalToday } from "@/lib/useLocalToday";
 import {
-  BORROWING_HISTORY,
-  LENDING_HISTORY,
-  toolImage,
-} from "@/mocks/profiles";
+  fromIncoming,
+  fromMyRequest,
+  type LoanView,
+} from "@/features/loans/requestView";
 import { api } from "@convex/_generated/api";
 
 import {
@@ -42,6 +44,21 @@ import {
   ProfileMeta,
   SectionHeading,
 } from "./ProfileParts";
+
+/** Rows shown in each history section (the most recent requests). */
+const HISTORY_ROWS = 5;
+const NOT_YET = new Date(0);
+
+function historyRows(views: readonly LoanView[], prefix: "To" | "From") {
+  return views.slice(0, HISTORY_ROWS).map((r) => ({
+    key: r.id,
+    name: r.item.name,
+    image: r.item.photo ?? "",
+    meta: `${prefix} ${r.person.shortName}`,
+    status: r.status,
+    dates: `${formatShort(parseIsoDate(r.start))} – ${formatShort(parseIsoDate(r.end))}`,
+  }));
+}
 
 /** One of the caller's active listings (Convex `myListings.mine`). */
 type MyItem = FunctionReturnType<typeof api.myListings.mine>[number];
@@ -71,6 +88,9 @@ export function MyProfileScreen() {
   const { user: clerkUser } = useUser();
   const toast = useToast(3200);
   const myListings = useQuery(api.myListings.mine);
+  const today = useLocalToday() ?? NOT_YET;
+  const borrowed = useQuery(api.borrowRequests.mine);
+  const lent = useQuery(api.loans.incoming);
   const items = myListings ?? [];
   const archiveListing = useMutation(api.myListings.archive);
   const [removing, setRemoving] = useState(false);
@@ -143,7 +163,8 @@ export function MyProfileScreen() {
   };
 
   const itemMenu = (item: MyItem, mobile: boolean) => {
-    const locked = item.onLoan;
+    // Also locked while a loan is arranged (approved / ready for pickup).
+    const locked = item.onLoan || item.activeLoan;
     const row = cn(
       "flex items-center gap-2.5 rounded-[10px] px-3 text-[14.5px] font-semibold",
       mobile ? "h-11" : "h-[42px]",
@@ -368,14 +389,11 @@ export function MyProfileScreen() {
               icon: "lend" as const,
               href: ROUTES.lending,
               link: "View all in Lending",
-              rows: LENDING_HISTORY.map((r, i) => ({
-                key: `lent-${i}`,
-                name: r.name,
-                image: toolImage(r.image),
-                meta: `To ${r.who}`,
-                status: r.status,
-                dates: r.dates,
-              })),
+              rows: historyRows(
+                (lent ?? []).map((r) => fromIncoming(r, today)),
+                "To",
+              ),
+              loading: lent === undefined,
             },
             {
               title: "Borrowing History",
@@ -383,14 +401,11 @@ export function MyProfileScreen() {
               icon: "borrow" as const,
               href: ROUTES.borrowing,
               link: "View all in Borrowing",
-              rows: BORROWING_HISTORY.map((r, i) => ({
-                key: `borrowed-${i}`,
-                name: r.name,
-                image: toolImage(r.image),
-                meta: `From ${r.who}`,
-                status: r.status,
-                dates: r.dates,
-              })),
+              rows: historyRows(
+                (borrowed ?? []).map((r) => fromMyRequest(r, today)),
+                "From",
+              ),
+              loading: borrowed === undefined,
             },
           ].map((h) => (
             <section
@@ -412,7 +427,13 @@ export function MyProfileScreen() {
                   </Link>
                 }
               />
-              <HistoryList rows={h.rows} href={h.href} />
+              {h.rows.length > 0 ? (
+                <HistoryList rows={h.rows} href={h.href} />
+              ) : (
+                <p className="m-0 py-6 text-center text-ink-soft">
+                  {h.loading ? "Loading…" : "Nothing here yet."}
+                </p>
+              )}
               <Link
                 href={h.href}
                 className="mt-2.5 flex min-h-11 items-center justify-center gap-1 rounded-full text-[14.5px] font-bold text-primary md:hidden"

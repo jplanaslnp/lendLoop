@@ -35,7 +35,7 @@ describe("loan presentation (UI copy from the design)", () => {
     const banner = getBanner(byId("s5"), MOCK_TODAY);
     expect(banner.title).toBe("Overdue");
     expect(banner.text).toBe(
-      "Return was due Nov 24 · 2 days late. Return it or request an extension.",
+      "Return was due Nov 24 · 2 days late. Please return it as soon as you can.",
     );
   });
 

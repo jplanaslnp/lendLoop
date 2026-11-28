@@ -61,7 +61,10 @@ For end-to-end tests, install the Playwright browser once:
 ```bash
 pnpm exec playwright install chromium
 ```
-The signed-in e2e tests use Clerk **development** test users (`+clerk_test` emails, code 424242), read from your local environment only: `E2E_CLERK_USER_EMAIL` / `E2E_CLERK_USER_PASSWORD` (borrower) and, for the borrowing tests, a second user `E2E_CLERK_OWNER_EMAIL` / `E2E_CLERK_OWNER_PASSWORD` (owner). Tests whose variables are missing are skipped. Never commit these values.
+### Loans and history
+Requests, approvals, pickups and returns are Convex mutations (`convex/borrowRequests.ts`, `convex/loans.ts`); every status change is recorded in the append-only `requestEvents` table. An hourly Convex cron marks loans overdue. Requests created before Phase 8 can be given their history once with `npx convex run loans:backfillHistory` (idempotent; changes no statuses).
+
+The signed-in e2e tests use Clerk **development** test users (`+clerk_test` emails, code 424242), read from your local environment only: `E2E_CLERK_USER_EMAIL` / `E2E_CLERK_USER_PASSWORD` (borrower) and, for the borrowing tests, a second user `E2E_CLERK_OWNER_EMAIL` / `E2E_CLERK_OWNER_PASSWORD` (owner; used by `tests/e2e/borrowing.spec.ts` and `tests/e2e/lifecycle.spec.ts`). Tests whose variables are missing are skipped. Never commit these values.
 
 ### Scripts
 | Command | Purpose |

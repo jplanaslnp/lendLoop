@@ -24,8 +24,8 @@ type RequestDetailProps = {
   request: LoanView;
   today: Date;
   onAction: (type: ActionType) => void;
-  /** Actions that work on this screen (others are not offered yet). */
-  allowedActions?: ReadonlySet<ActionType>;
+  /** Whether an action is offered (Convex enforces the same rules). */
+  canAct?: (type: ActionType) => boolean;
 };
 
 /** Request/loan detail panel (sticky on ≥1000px, full screen on mobile). */
@@ -33,7 +33,7 @@ export function RequestDetail({
   request,
   today,
   onAction,
-  allowedActions,
+  canAct,
 }: RequestDetailProps) {
   const { person, start, end, itemName, isOwner } = requestContext(
     request,
@@ -42,7 +42,7 @@ export function RequestDetail({
   const banner = getBanner(request, today);
   const bannerStyle = LOAN_STATUS_STYLES[banner.status];
   const actions = getActions(request, today).filter(
-    (a) => !allowedActions || (a.kind !== "info" && allowedActions.has(a.type)),
+    (a) => !canAct || a.kind === "info" || canAct(a.type),
   );
   const place = person.pickupArea;
   const earlyStatus = ["pending", "declined", "cancelled"].includes(
@@ -157,6 +157,17 @@ export function RequestDetail({
             {pluralDays(rangeLength(start, end))}
           </span>
         </div>
+
+        {request.message ? (
+          <div className="border-b border-solid border-[rgba(47,70,54,.1)] py-4">
+            <div className="text-sm text-ink-soft">
+              {isOwner ? `Message from ${person.first}` : "Your message"}
+            </div>
+            <p className="mt-0.5 mb-0 text-[15px] leading-normal whitespace-pre-line text-forest">
+              {request.message}
+            </p>
+          </div>
+        ) : null}
 
         <div
           className="mt-4 flex items-start gap-3 rounded-[14px] border border-solid border-[rgba(0,0,0,.04)] px-4 py-3.5"

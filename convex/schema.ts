@@ -5,8 +5,9 @@ import { v } from "convex/values";
  * LendLoop data model (docs/05_DATABASE_SCHEMA.md). Phase 4 created every
  * table; Phase 5 reads listings (public and member views); Phase 6 lets
  * members create, edit and archive their own listings with uploaded photos;
- * Phase 7 creates pending borrow requests. Approval and the rest of the loan
- * lifecycle come in Phase 8 (docs/DECISIONS.md).
+ * Phase 7 creates pending borrow requests; Phase 8 adds approval, pickup,
+ * return, overdue and the append-only `requestEvents` history
+ * (docs/DECISIONS.md).
  */
 
 export const roleValidator = v.union(v.literal("user"), v.literal("admin"));
@@ -35,6 +36,18 @@ export const listingStatusValidator = v.union(
   v.literal("active"),
   v.literal("removed"),
   v.literal("archived"),
+);
+
+export const requestActorValidator = v.union(
+  v.literal("borrower"),
+  v.literal("owner"),
+  v.literal("system"),
+);
+
+export const requestReasonValidator = v.union(
+  v.literal("dates_taken"),
+  v.literal("listing_archived"),
+  v.literal("due_date_passed"),
 );
 
 export const borrowStatusValidator = v.union(
@@ -170,6 +183,14 @@ export default defineSchema({
     cancelledBy: v.optional(v.id("users")),
     /** Set when the system cancelled the request, not a person. */
     cancelReason: v.optional(v.literal("listing_archived")),
+    /** Who approved / declined (always the owner; Phase 8). */
+    approvedBy: v.optional(v.id("users")),
+    declinedBy: v.optional(v.id("users")),
+    /**
+     * Optional plain-text note the owner adds when approving (max 200
+     * characters). Shown only to the borrower, only after approval.
+     */
+    pickupNote: v.optional(v.string()),
     declineReason: v.optional(v.string()),
     idempotencyKey: v.optional(v.string()),
   })
@@ -180,6 +201,24 @@ export default defineSchema({
     .index("by_status_and_dueAt", ["status", "dueAt"])
     .index("by_owner_and_status", ["ownerId", "status"])
     .index("by_borrower_and_status", ["borrowerId", "status"]),
+
+  /**
+   * Append-only status history of a request (Phase 8). Only server code
+   * inserts rows; nothing updates or deletes them. `actor` is the role that
+   * caused the transition; `actorId` is set for people, never for `system`.
+   */
+  requestEvents: defineTable({
+    requestId: v.id("borrowRequests"),
+    /** null for the creation event. */
+    from: v.union(borrowStatusValidator, v.null()),
+    to: borrowStatusValidator,
+    actor: requestActorValidator,
+    actorId: v.optional(v.id("users")),
+    at: v.number(),
+    reason: v.optional(requestReasonValidator),
+    /** Reconstructed from stored fields for pre-Phase 8 requests. */
+    backfilled: v.optional(v.literal(true)),
+  }).index("by_request", ["requestId"]),
 
   /** Outbox for notification events sent to n8n (Phase 10+). */
   automationEvents: defineTable({

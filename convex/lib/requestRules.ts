@@ -202,3 +202,24 @@ export function normalizeMessage(
 export function isIdempotencyKey(value: string): boolean {
   return /^[A-Za-z0-9-]{8,64}$/.test(value);
 }
+
+/**
+ * The UTC instant at which calendar day `iso` begins in `timeZone` (local
+ * midnight, or the first existing instant of that day when a DST change
+ * skips midnight). Every real zone is within UTC−12…UTC+14, so the answer
+ * lies within ±16 hours of UTC midnight; a binary search on "which local
+ * date is it at instant t" finds it to the millisecond.
+ */
+export function startOfDayIn(iso: string, timeZone: string): number {
+  const day = dayNumber(iso);
+  if (day === null) throw new Error(`Not a date: ${iso}`);
+  const margin = 16 * 3_600_000;
+  let lo = day * DAY_MS - margin; // still the previous local day
+  let hi = day * DAY_MS + margin; // already `iso` (or later) locally
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (todayIn(timeZone, mid) >= iso) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}

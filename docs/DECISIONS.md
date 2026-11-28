@@ -19,10 +19,10 @@ Record decisions that affect product behavior, schema, security or architecture.
 ## Pending decisions
 - [ ] Confirm if Share your tool design brand is replaced fully by LendLoop (recommended: yes).
 - [ ] Confirm image upload is required in v1.
-- [ ] Confirm pickup/return two-step lifecycle vs simple one-step “mark returned”.
+- [x] (Phase 8: two-step pickup and return; the owner may also confirm a return directly) Confirm pickup/return two-step lifecycle vs simple one-step “mark returned”.
 - [x] (Phase 7: half-open `[startDate, endDate)`) Confirm inclusive/exclusive date range semantics.
 - [x] (Phase 7: yes; only approved/active loans hold dates) Confirm pending requests may overlap.
-- [ ] Confirm cancellation and extension policies. (Phase 7: borrowers may cancel their own **pending** requests; everything else is open.)
+- [x] (Phase 8: borrower cancels pending/approved/ready; owner cancels approved/ready; no cancelling after pickup; extensions out of scope) Confirm cancellation and extension policies.
 - [ ] Confirm exact owner details shown to borrower and at what status.
 - [ ] Confirm notification channel for evaluation (mock, email, Slack or Discord).
 - [ ] Confirm whether admins need a dedicated dashboard in the evaluation.
@@ -37,8 +37,8 @@ Recorded during Phase 1. These describe differences between the design export (`
 - [x] (Phase 7: 7 days, global) Maximum loan length: Product Details shows "Max. loan: Up to 7 days". Is there a maximum, and is it global or set per listing?
 - [ ] Sign-up address field: the Auth Modal collects "Building, floor, neighbourhood" at sign-up. Should it be collected, when, and how much of it (data minimisation, docs/10)? It is also not a native Clerk sign-up field.
 - [ ] Auth modal features: the design includes "Forgot your password?", a Terms/Privacy acceptance checkbox and Google sign-in. Confirm these match the Clerk configuration (Email + Google).
-- [ ] Loan status vocabulary: the design uses pending, approved, ready (for pickup), borrowed, overdue, return pending, returned, declined and cancelled, with cancellation by either party after approval. Confirm this matches the lifecycle in docs/06 (this overlaps with the pickup/return and cancellation items above).
-- [ ] Extensions: the Borrowing/Lending designs include an extension icon. Are date extensions in scope (overlaps with the extension policy item above)?
+- [x] (Phase 8: design vocabulary kept; owner and borrower may cancel before pickup) Loan status vocabulary: the design uses pending, approved, ready (for pickup), borrowed, overdue, return pending, returned, declined and cancelled, with cancellation by either party after approval. Confirm this matches the lifecycle in docs/06 (this overlaps with the pickup/return and cancellation items above).
+- [x] (Phase 8: not in scope; the button stays hidden) Extensions: the Borrowing/Lending designs include an extension icon. Are date extensions in scope (overlaps with the extension policy item above)?
 - [ ] Footer links (How it works, FAQs, Community guidelines, Contact us, Terms of Service, Privacy Policy): do these pages exist in v1, or should the links be placeholders?
 - [ ] Concept PNGs in `design/uploads/` use older navigation (My Requests / My Loans / About). Confirm the `.dc.html` screens (Explore / Borrowing / Lending) supersede them.
 
@@ -163,4 +163,45 @@ Open issue (Phase 7): signed-in member briefly treated as signed out after a pag
 - **Affected files:** `src/features/auth/AuthProvider.tsx` (`requireAuth`, `guardLink`); surfaced by `src/features/tools/ProductDetailsScreen.tsx` (Request to borrow).
 - **Reproduce:** sign in as a member; stay idle until the session token expires (about a minute); do a full page load of another member's `/tools/<id>`; pick dates and click "Request to borrow" within the first half-second. The sign-in modal opens instead of "Confirm your request". The e2e test reproduces it reliably because it navigates and clicks immediately after a long flow.
 - **Fix applied (approved option B), limited to `requireAuth` and `guardLink`:** both now treat Clerk as ready only when its browser script has loaded and confirmed the session (`useClerk().loaded`, observed through `clerk.addListener`), not from the server render. A `requireAuth` click before that is held and resolved once Clerk confirms: members get the action, genuine guests get the sign-in modal. `guardLink` lets links through until then (proxy.ts still gates account pages). Sign-in, sign-out, the sign-in gate and protected-page redirects are unchanged.
-- **Status:** covered by `tests/unit/require-auth.test.tsx` (7 tests, including the exact scenario: server reports signed out → browser script loads → member confirmed → the request dialog opens, never the sign-in modal; genuine guests still get the modal). 4 of these fail against the original Phase 3 code and all pass with the fix. **Not yet confirmed end to end:** the borrowing e2e test has not completed a passing run with the fix (the last run was stopped before it finished). Next step: run `tests/e2e/borrowing.spec.ts` once on desktop, then mobile, then the full suite.
+- **Status (updated in Phase 8):** covered by `tests/unit/require-auth.test.tsx` (7 tests; 4 fail against the original Phase 3 code, all pass with the fix). **Confirmed end to end:** in Phase 8 the complete Playwright suite passed (30/30, desktop and mobile), including `tests/e2e/borrowing.spec.ts`. This is one full run; keep watching it for flakiness.
+
+## Notes from Phase 8 (incoming requests and loan lifecycle)
+Approved by the product owner before implementation:
+- **Lifecycle and actors** (enforced in Convex; every other transition, and any repeat, is refused):
+
+  | From | To | Actor |
+  |---|---|---|
+  | pending | approved | owner (availability re-checked in the same transaction) |
+  | pending | declined | owner |
+  | pending | cancelled | borrower |
+  | approved | ready_for_pickup | owner ("Item ready for pickup") |
+  | approved, ready_for_pickup | cancelled | borrower or owner |
+  | ready_for_pickup | borrowed | borrower ("Confirm Pickup") |
+  | borrowed | overdue | system (hourly cron) |
+  | borrowed, overdue | return_pending | borrower ("Mark as Returned") |
+  | borrowed, overdue, return_pending | returned | owner ("Confirm Return") |
+
+  No cancelling after pickup: the item follows the return flow. Extensions are not in scope.
+- **Approval** re-checks availability inside the approving mutation and, in the same transaction, declines the other pending requests on that listing whose dates overlap (`declineReason: "dates_taken"`, actor `system`). Approval records `approvedAt`/`approvedBy`.
+- **Pickup note:** the owner may add an optional plain-text note (max 200 characters) when approving. Only the borrower sees it, and only once the request is approved. No exact address is stored or shown anywhere.
+- **Overdue:** a loan is overdue from the beginning of its `endDate` (the day after the last day of use) in the borrower's stored time zone. `dueAt` (that local midnight as a UTC instant) is computed server-side when pickup is confirmed. An hourly cron moves `borrowed` loans with `dueAt` ≤ now to `overdue`; it is idempotent (the status is re-checked in the same transaction, so a second run writes nothing).
+- **Admins** act only as ordinary members in Phase 8. Viewing or managing other people's loans is Phase 9.
+- **Archiving** a listing is refused while it has a loan that is `approved`, `ready_for_pickup`, `borrowed`, `overdue` or `return_pending`; pending requests are still cancelled automatically (Phase 7).
+- **Status history:** every transition appends a `requestEvents` row (previous status, new status, actor role and user, server timestamp, optional reason). Only server code inserts rows; no function updates or deletes them.
+- **Existing development data:** requests created before Phase 8 get history through an idempotent internal backfill that only records events the stored data establishes (creation by the borrower at `createdAt`; a cancellation with its stored `cancelledAt`, `cancelledBy` and reason). Statuses and timestamps are not changed, nothing is deleted, and backfilled rows are marked `backfilled: true`.
+
+Implementation notes (Phase 8):
+- `convex/loans.ts`: `approve`, `decline`, `markReady`, `confirmPickup`, `markReturned`, `confirmReturn` (each takes only the request ID; `approve` also the optional pickup note), the `incoming` query (Lending), the internal `markOverdueLoans` (hourly cron) and the internal `backfillHistory`. `borrowRequests.cancel` handles both parties' cancellations. Transition rules live in `convex/lib/lifecycle.ts`; every write goes through `applyTransition` (`convex/lib/history.ts`), which patches the request and appends the event in one transaction.
+- Approval is refused when the requested dates have already passed (`DATES_PASSED`: `endDate` ≤ the borrower's today), so stale requests can't become loans.
+- The borrower sees the owner as "Marc S." and the owner sees the borrower as "Bruno M." (same members-only view as Explore). No email, user ID or address is returned.
+- The UI offers only the actions valid for the status and the person (Borrowing: Details, Cancel, Pickup details, Confirm Pickup, Mark as Returned; Lending: Approve with optional note, Decline, Item ready for pickup, Cancel Loan, Confirm Return). "Request Extension" is never offered. Toasts and banners no longer promise notifications or reminders (Phases 10–11).
+- My Profile's lending and borrowing history sections show real data; only other members' profile pages (`/users/[id]`) still use Phase 2 mock data.
+- Schema changes are additive and optional: `requestEvents` (new), and `borrowRequests.approvedBy`, `declinedBy`, `pickupNote`. Existing documents stay valid; no migration of stored fields. The dev deployment's 13 earlier requests were backfilled (26 events, statuses and timestamps unchanged; a second run added nothing).
+
+Known limitations (Phase 8):
+- Overdue is applied by an hourly cron, so a loan can show "On loan" for up to an hour after it became due.
+- A loan that was approved but never picked up is not expired automatically; either party can cancel it.
+- `convex-test` runs mutations one after another: the concurrent-approval test checks the outcome; the retry itself is Convex's transaction guarantee.
+- `incoming` and `mine` return the latest 100 requests (no pagination yet).
+- E2E runs leave archived test listings and finished test loans in the dev deployment.
+

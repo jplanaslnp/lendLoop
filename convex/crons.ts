@@ -12,4 +12,12 @@ crons.daily(
   {},
 );
 
+// Borrowed loans whose due date has passed become overdue (Phase 8).
+crons.hourly(
+  "mark overdue loans",
+  { minuteUTC: 5 },
+  internal.loans.markOverdueLoans,
+  {},
+);
+
 export default crons;
